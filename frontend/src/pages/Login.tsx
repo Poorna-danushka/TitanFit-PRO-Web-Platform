@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { authAPI } from '../api/apiService';
 import { useAuth } from '../context/AuthContext';
-import { Dumbbell, Eye, EyeOff, Loader2, AlertCircle, Mail, Lock, ShieldCheck, Clock } from 'lucide-react';
+import { Eye, EyeOff, Loader2, AlertCircle, Mail, Lock, ShieldCheck, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   validateLoginForm,
@@ -11,6 +11,8 @@ import {
   formatLockoutTime,
   sanitizeInput,
 } from '../utils/security';
+
+import LogoIcon from '../components/LogoIcon';
 
 export default function Login() {
   const [formData, setFormData] = useState({ email: '', password: '' });
@@ -25,8 +27,10 @@ export default function Login() {
   const [searchParams] = useSearchParams();
   const { login } = useAuth();
 
-  // Show contextual messages from URL params
+  // Show contextual messages from URL params & fetch CSRF token
   useEffect(() => {
+    authAPI.getCsrfToken().catch(() => {});
+
     const reason = searchParams.get('reason');
     if (reason === 'session_expired') {
       setSessionMsg('Your session expired. Please sign in again.');
@@ -77,7 +81,9 @@ export default function Login() {
       const userData = response.data.user;
       resetRateLimit(`login:${formData.email}`);
       login(response.data.tokens.accessToken, userData, response.data.tokens.refreshToken);
-      navigate(userData.role === 'admin' ? '/admin/dashboard' : '/dashboard');
+      const uRole = (userData.role || '').toUpperCase();
+      const isAdminLike = ['ADMIN', 'SYSTEM_ADMIN'].includes(uRole) || Boolean(userData?.isSystemAdmin);
+      navigate(isAdminLike ? '/admin/dashboard' : uRole === 'STAFF' ? '/staff/dashboard' : uRole === 'TRAINER' ? '/trainer/dashboard' : '/dashboard');
     } catch (err: any) {
       setError(err.safeMessage || 'Invalid email or password');
     } finally {
@@ -123,12 +129,11 @@ export default function Login() {
           transition={{ duration: 0.5 }}
           className="relative z-10 w-full max-w-md"
         >
-          <Link to="/" className="flex items-center gap-2.5 mb-10 justify-center lg:justify-start">
-            <div className="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center glow-green">
-              <Dumbbell className="w-5 h-5 text-black" strokeWidth={2.5} />
-            </div>
-            <span className="font-display text-2xl font-bold text-white tracking-tight">
-              GymFit<span className="text-green-400">Pro</span>
+          <Link to="/" className="flex items-center gap-2.5 mb-10 justify-center lg:justify-start group">
+            <LogoIcon size="lg" variant="green" />
+            <span className="text-2xl brand-logo-title tracking-tight text-white flex items-center gap-2 font-extrabold">
+              <span>TITAN<span className="text-green-400">FIT</span></span>
+              <span className="brand-accent-badge text-xs">PRO</span>
             </span>
           </Link>
 

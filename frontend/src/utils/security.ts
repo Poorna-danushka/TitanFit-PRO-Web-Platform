@@ -78,7 +78,7 @@ export function validatePassword(password: string): {
   const labels = ['Very Weak', 'Weak', 'Fair', 'Good', 'Strong'];
   const colors = ['bg-red-600', 'bg-orange-500', 'bg-yellow-500', 'bg-blue-500', 'bg-green-500'];
 
-  return { score, label: labels[score], color: colors[score], failures };
+  return { score, label: labels[score] ?? 'Very Weak', color: colors[score] ?? 'bg-red-600', failures };
 }
 
 /** Validate login form fields */
@@ -94,7 +94,8 @@ export function validateLoginForm(email: string, password: string): ValidationRe
 export function validateRegisterForm(
   name: string,
   email: string,
-  password: string
+  password: string,
+  phone?: string
 ): ValidationResult {
   const errors: Record<string, string> = {};
 
@@ -106,9 +107,23 @@ export function validateRegisterForm(
   if (!email.trim()) errors.email = 'Email is required';
   else if (!isValidEmail(email)) errors.email = 'Enter a valid email address';
 
-  const { score, failures } = validatePassword(password);
-  if (!password) errors.password = 'Password is required';
-  else if (score < 4) errors.password = `Weak password. Missing: ${failures.join(', ')}`;
+  if (phone && phone.trim()) {
+    const digitsOnly = phone.replace(/[\s\-\+\(\)]/g, '');
+    if (digitsOnly.length < 7 || digitsOnly.length > 15) {
+      errors.phone = 'Enter a valid contact number';
+    }
+  }
+
+  if (!password) {
+    errors.password = 'Password is required';
+  } else {
+    const { score, failures } = validatePassword(password);
+    if (score < 3) {
+      errors.password = failures.length > 0
+        ? `Password needs: ${failures.join(', ')}`
+        : 'Password is too weak';
+    }
+  }
 
   return { valid: Object.keys(errors).length === 0, errors };
 }

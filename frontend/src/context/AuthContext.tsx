@@ -14,10 +14,20 @@ export interface User {
   id: string;
   _id?: string;
   name: string;
+  firstName?: string;
+  lastName?: string;
   email: string;
-  role: 'user' | 'admin';
+  phone?: string;
+  role: 'SYSTEM_ADMIN' | 'ADMIN' | 'TRAINER' | 'STAFF' | 'MEMBER' | string;
+  isSystemAdmin?: boolean;
+  bio?: string;
+  gender?: string;
+  dateOfBirth?: string;
+  profileImage?: string;
   weight?: number;
   height?: number;
+  isEmailVerified?: boolean;
+  subscriptionStatus?: string;
   createdAt?: string;
 }
 
