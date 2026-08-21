@@ -1,6 +1,14 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { getToken, clearAuthStorage } from '../utils/security';
 
+// Helper to read cookie value by name
+function getCookie(name: string): string | null {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
+  return null;
+}
+
 // ─── Axios instance ───────────────────────────────────────────────────────────
 
 const API_BASE_URL = '/api';
@@ -8,13 +16,14 @@ const API_BASE_URL = '/api';
 const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 15_000,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
-    'X-Requested-With': 'XMLHttpRequest', // CSRF protection hint for servers
+    'X-Requested-With': 'XMLHttpRequest',
   },
 });
 
-// ─── Request interceptor: attach token + security headers ─────────────────────
+// ─── Request interceptor: attach token + CSRF header ─────────────────────
 
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
@@ -23,9 +32,10 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
 
-    // Strip any Authorization header for cross-origin requests (avoid leaking tokens)
-    if (config.url && config.url.startsWith('http') && !config.url.startsWith(API_BASE_URL)) {
-      delete config.headers.Authorization;
+    // Attach CSRF Token for mutating HTTP methods
+    const csrfToken = getCookie('XSRF-TOKEN') || (window as any).__CSRF_TOKEN__;
+    if (csrfToken && ['post', 'put', 'delete', 'patch'].includes(config.method?.toLowerCase() || '')) {
+      config.headers['X-CSRF-Token'] = csrfToken;
     }
 
     return config;
@@ -88,12 +98,13 @@ function getDefaultErrorMessage(status?: number): string {
 // ─── Auth API ─────────────────────────────────────────────────────────────────
 
 export const authAPI = {
-  register: (name: string, email: string, password: string) =>
-    api.post('/auth/register', { name, email, password }),
+  getCsrfToken: () => api.get('/auth/csrf-token'),
+  register: (name: string, email: string, password: string, phone?: string) =>
+    api.post('/auth/register', { name, email, password, phone }),
   login: (email: string, password: string) =>
     api.post('/auth/login', { email, password }),
   getMe: () => api.get('/auth/me'),
-  updateProfile: (data: { name?: string; weight?: number; height?: number }) =>
+  updateProfile: (data: { name?: string; phone?: string; bio?: string; gender?: string; dateOfBirth?: string; weight?: number; height?: number; profileImage?: string }) =>
     api.put('/auth/profile', data),
   changePassword: (currentPassword: string, newPassword: string) =>
     api.put('/auth/change-password', { currentPassword, newPassword }),
@@ -136,8 +147,11 @@ export const packageAPI = {
 export const purchaseAPI = {
   getAll: () => api.get('/purchases'),
   getMy: () => api.get('/purchases/my-purchases'),
+  getMyPurchases: () => api.get('/purchases/my-purchases'),
   create: (packageId: string, price: number) =>
     api.post('/purchases', { packageId, price }),
+  cardPayment: (data: { packageId: string; price: number }) => api.post('/purchases/card', data),
+  bankTransferPayment: (data: { packageId: string; price: number; bankTransferReference?: string; transferSlipUrl?: string }) => api.post('/purchases/bank-transfer', data),
   createWithPayment: (packageId: string, paymentIntentId: string) =>
     api.post('/purchases/payment', { packageId, paymentIntentId }),
   updateStatus: (id: string, status: string) =>
@@ -168,6 +182,8 @@ export const completedExerciseAPI = {
 
 export const userAPI = {
   getAll: () => api.get('/users'),
+  create: (data: { name: string; email: string; password?: string; role: string; phone?: string }) => api.post('/users', data),
+  toggleStatus: (id: string, isActive?: boolean) => api.put(`/users/${id}/status`, { isActive }),
 };
 
 // ─── Admin API ────────────────────────────────────────────────────────────────
@@ -179,6 +195,8 @@ export const adminAPI = {
   deleteUser: (id: string) => api.delete(`/users/${id}`),
   getAllPackages: () => api.get('/packages'),
   getAllPurchases: () => api.get('/purchases'),
+  approveBankTransfer: (purchaseId: string) => api.put(`/purchases/${purchaseId}/approve-bank-transfer`),
+  rejectBankTransfer: (purchaseId: string) => api.put(`/purchases/${purchaseId}/reject-bank-transfer`),
   getAllExercises: () => api.get('/exercises'),
   createPackage: (data: unknown) => api.post('/packages', data),
   updatePackage: (id: string, data: unknown) => api.put(`/packages/${id}`, data),
@@ -186,7 +204,6 @@ export const adminAPI = {
   createExercise: (data: unknown) => api.post('/exercises', data),
   updateExercise: (id: string, data: unknown) => api.put(`/exercises/${id}`, data),
   deleteExercise: (id: string) => api.delete(`/exercises/${id}`),
-  getPaymentStats: () => api.get('/payments/stats'),
 };
 
 // ─── Workout API ──────────────────────────────────────────────────────────────
@@ -216,6 +233,70 @@ export const notificationAPI = {
   delete: (id: string) => api.delete(`/notifications/${id}`),
   markAsRead: (id: string) => api.post(`/notifications/${id}/read`),
   markAllAsRead: () => api.post('/notifications/read-all'),
+};
+
+// ─── Membership API ────────────────────────────────────────────────────────────
+
+export const membershipAPI = {
+  getPlans: () => api.get('/memberships/plans'),
+  getPlanById: (id: string) => api.get(`/memberships/plans/${id}`),
+  createPlan: (data: unknown) => api.post('/memberships/plans', data),
+  updatePlan: (id: string, data: unknown) => api.put(`/memberships/plans/${id}`, data),
+  deletePlan: (id: string) => api.delete(`/memberships/plans/${id}`),
+  getMyMembership: () => api.get('/memberships/my'),
+  purchaseMembership: (planId: string, paymentMethod?: string) => api.post('/memberships/purchase', { planId, paymentMethod }),
+};
+
+// ─── Classes API ───────────────────────────────────────────────────────────────
+
+export const classAPI = {
+  getAll: () => api.get('/classes'),
+  getById: (id: string) => api.get(`/classes/${id}`),
+  getSchedules: (classId?: string) => api.get('/classes/schedules', { params: { classId } }),
+  bookClass: (scheduleId: string) => api.post('/classes/bookings', { scheduleId }),
+  cancelBooking: (bookingId: string) => api.delete(`/classes/bookings/${bookingId}`),
+  getMyBookings: () => api.get('/classes/my-bookings'),
+  createClass: (data: unknown) => api.post('/classes', data),
+  createSchedule: (data: unknown) => api.post('/classes/schedules', data),
+};
+
+// ─── Trainers & PT API ─────────────────────────────────────────────────────────
+
+export const trainerAPI = {
+  getAll: () => api.get('/trainers'),
+  getById: (id: string) => api.get(`/trainers/${id}`),
+  getAvailability: (trainerId: string) => api.get(`/trainers/${trainerId}/availability`),
+  bookSession: (data: { trainerId: string; packageType?: string; date: string; timeSlot: string }) => api.post('/personal-training/bookings', data),
+  getMyPTBookings: () => api.get('/personal-training/my-bookings'),
+};
+
+// ─── Attendance & QR API ───────────────────────────────────────────────────────
+
+export const attendanceAPI = {
+  getQRCode: () => api.get('/attendance/my-qr'),
+  checkInQR: (qrData: string) => api.post('/attendance/scan-qr', { qrData }),
+  manualCheckIn: (memberId: string) => api.post('/attendance/check-in', { memberId }),
+  checkOut: (attendanceId: string) => api.post('/attendance/check-out', { attendanceId }),
+  getMyHistory: () => api.get('/attendance/my-history'),
+  getStats: () => api.get('/attendance/stats'),
+};
+
+// ─── Nutrition API ─────────────────────────────────────────────────────────────
+
+export const nutritionAPI = {
+  getMyPlan: () => api.get('/nutrition/my-plan'),
+  logMeal: (data: { mealType: string; foodName: string; calories: number; protein?: number; carbs?: number; fat?: number }) => api.post('/nutrition/log', data),
+  getMyLogs: () => api.get('/nutrition/my-logs'),
+};
+
+// ─── AI Service API ─────────────────────────────────────────────────────────────
+
+export const aiAPI = {
+  getHealth: () => api.get('/ai/health'),
+  getConversations: () => api.get('/ai/conversations'),
+  getMessages: (conversationId: string) => api.get(`/ai/conversations/${conversationId}/messages`),
+  sendMessage: (message: string, conversationId?: string) => api.post('/ai/chat', { message, conversationId }),
+  clearHistory: () => api.delete('/ai/conversations'),
 };
 
 export default api;
