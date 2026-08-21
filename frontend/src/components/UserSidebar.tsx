@@ -1,7 +1,9 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Package, Activity, User, LogOut, X, Zap, Dumbbell, Bell } from 'lucide-react';
+import { Home, Package, Activity, User, LogOut, X, Dumbbell, Bell, Award, QrCode, TrendingUp, UserCheck, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useAnnouncements } from '../hooks/useNotifications';
+
+import LogoIcon from './LogoIcon';
 
 interface Props {
   onClose?: () => void;
@@ -13,13 +15,22 @@ export default function UserSidebar({ onClose }: Props) {
   const { unreadCount } = useAnnouncements();
   const unread = unreadCount;
 
+  const userRole = (user?.role || 'MEMBER').toUpperCase();
+
   const navItems = [
-    { name: 'Dashboard',     path: '/dashboard',    icon: <Home     className="w-[18px] h-[18px]" /> },
-    { name: 'Packages',      path: '/packages',     icon: <Package  className="w-[18px] h-[18px]" /> },
-    { name: 'My Package',    path: '/my-package',   icon: <Activity className="w-[18px] h-[18px]" /> },
-    { name: 'Workouts',      path: '/workouts',     icon: <Dumbbell className="w-[18px] h-[18px]" /> },
-    { name: 'Notifications', path: '/notifications',icon: <Bell     className="w-[18px] h-[18px]" />, badge: unread },
-    { name: 'Profile',       path: '/profile',      icon: <User     className="w-[18px] h-[18px]" /> },
+    { name: 'Dashboard',     path: '/dashboard',     icon: <Home       className="w-[18px] h-[18px]" /> },
+    ...(userRole === 'STAFF' || userRole === 'ADMIN' ? [{ name: 'Staff Portal', path: '/staff/dashboard', icon: <UserCheck className="w-[18px] h-[18px]" /> }] : []),
+    ...(userRole === 'TRAINER' || userRole === 'ADMIN' ? [{ name: 'Trainer Portal', path: '/trainer/dashboard', icon: <Award className="w-[18px] h-[18px]" /> }] : []),
+    ...(userRole === 'ADMIN' ? [{ name: 'Admin Portal', path: '/admin/dashboard', icon: <ShieldCheck className="w-[18px] h-[18px]" /> }] : []),
+    { name: 'Packages',      path: '/packages',      icon: <Package    className="w-[18px] h-[18px]" /> },
+    { name: 'My Package',    path: '/my-package',    icon: <Activity   className="w-[18px] h-[18px]" /> },
+    { name: 'Workouts',      path: '/workouts',      icon: <Dumbbell   className="w-[18px] h-[18px]" /> },
+    { name: 'Trainers',      path: '/trainers',      icon: <Award      className="w-[18px] h-[18px]" /> },
+    { name: 'Entry Pass & QR',path: '/attendance-qr',icon: <QrCode     className="w-[18px] h-[18px]" /> },
+    { name: 'Progress Log',  path: '/progress',      icon: <TrendingUp className="w-[18px] h-[18px]" /> },
+
+    { name: 'Notifications', path: '/notifications', icon: <Bell       className="w-[18px] h-[18px]" />, badge: unread },
+    { name: 'Profile',       path: '/profile',       icon: <User       className="w-[18px] h-[18px]" /> },
   ];
 
   return (
@@ -28,11 +39,10 @@ export default function UserSidebar({ onClose }: Props) {
       {/* Logo */}
       <div className="h-16 flex items-center justify-between px-5 border-b border-white/[0.06]">
         <Link to="/dashboard" className="flex items-center gap-2.5 group">
-          <div className="w-8 h-8 bg-green-500 rounded-xl flex items-center justify-center glow-pulse">
-            <Zap className="w-4 h-4 text-black" strokeWidth={2.5} />
-          </div>
-          <span className="text-lg font-black tracking-tight font-display">
-            GymFit<span className="text-green-400">Pro</span>
+          <LogoIcon size="sm" variant="green" />
+          <span className="text-xl brand-logo-title tracking-tight text-white flex items-center gap-1.5 font-extrabold">
+            <span>TITAN<span className="text-green-400">FIT</span></span>
+            <span className="brand-accent-badge">PRO</span>
           </span>
         </Link>
         {onClose && (

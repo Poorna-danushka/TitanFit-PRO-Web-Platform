@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Bell, Search, Menu, User, LogOut, ChevronRight, Check, CheckCheck, Settings, Dumbbell } from 'lucide-react';
+import { Bell, Search, Menu, User, LogOut, ChevronRight, Check, CheckCheck, Settings } from 'lucide-react';
 import { useAnnouncements, AnnouncementType } from '../hooks/useNotifications';
 import { Link, useNavigate } from 'react-router-dom';
+import LogoIcon from './LogoIcon';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface NavbarProps {
@@ -29,7 +30,8 @@ function timeAgo(isoString: string) {
 export default function Navbar({ onMenuClick }: NavbarProps) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const isAdmin = user?.role === 'admin';
+  const uRole = (user?.role || '').toUpperCase();
+  const isAdmin = ['ADMIN', 'SYSTEM_ADMIN', 'STAFF'].includes(uRole) || Boolean((user as any)?.isSystemAdmin);
 
   // Only load notification data for regular users
   const { announcements, readIds, markRead, markAllRead, unreadCount } = useAnnouncements();
@@ -94,8 +96,11 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
 
         {/* Brand Logo (Visible on mobile mostly, or if sidebar is collapsed) */}
         <div className="md:hidden flex items-center gap-2">
-          <Dumbbell className="text-green-500 w-6 h-6" />
-          <span className="text-xl font-extrabold tracking-tight text-white">GymFit<span className="text-green-500">Pro</span></span>
+          <LogoIcon size="sm" variant="green" />
+          <span className="text-xl brand-logo-title tracking-tight text-white flex items-center gap-1.5 font-extrabold">
+            <span>TITAN<span className="text-green-400">FIT</span></span>
+            <span className="brand-accent-badge">PRO</span>
+          </span>
         </div>
 
         {/* Search */}
@@ -272,26 +277,22 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
                 </div>
                 
                 <div className="px-2 space-y-1">
-                  {!isAdmin && (
-                    <Link
-                      to="/profile"
-                      onClick={() => setAvatarOpen(false)}
-                      className="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-gray-300 hover:text-white hover:bg-white/5 transition-all rounded-xl group"
-                    >
-                      <User className="w-4 h-4 text-gray-500 group-hover:text-white" />
-                      My Profile
-                    </Link>
-                  )}
-                  {!isAdmin && (
-                    <Link
-                      to="/notifications"
-                      onClick={() => setAvatarOpen(false)}
-                      className="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-gray-300 hover:text-white hover:bg-white/5 transition-all rounded-xl group"
-                    >
-                      <Settings className="w-4 h-4 text-gray-500 group-hover:text-white" />
-                      Settings & Prefs
-                    </Link>
-                  )}
+                  <Link
+                    to="/profile"
+                    onClick={() => setAvatarOpen(false)}
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-gray-300 hover:text-white hover:bg-white/5 transition-all rounded-xl group"
+                  >
+                    <User className="w-4 h-4 text-gray-500 group-hover:text-white" />
+                    My Profile
+                  </Link>
+                  <Link
+                    to="/notifications"
+                    onClick={() => setAvatarOpen(false)}
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-gray-300 hover:text-white hover:bg-white/5 transition-all rounded-xl group"
+                  >
+                    <Settings className="w-4 h-4 text-gray-500 group-hover:text-white" />
+                    Notifications & Prefs
+                  </Link>
                 </div>
 
                 <div className={`px-2 border-t border-white/[0.05] mt-2 pt-2`}>

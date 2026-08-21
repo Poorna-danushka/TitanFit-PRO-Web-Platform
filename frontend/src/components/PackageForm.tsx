@@ -181,11 +181,11 @@ export default function PackageForm({ onClose, onSave, packageId }: PackageFormP
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">Price ($) *</label>
+                <label className="block text-sm font-medium text-gray-400 mb-2">Price (LKR) *</label>
                 <input
                   type="number"
                   value={formData.price}
-                  onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
+                  onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
                   className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-green-500"
                   required
                 />
@@ -379,7 +379,7 @@ export default function PackageForm({ onClose, onSave, packageId }: PackageFormP
               </button>
               <button
                 type="submit"
-                disabled={loading || selectedExercises.length === 0}
+                disabled={loading || !formData.name.trim()}
                 className="flex-1 px-4 py-2 bg-green-500 text-black font-bold rounded-lg hover:bg-green-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? 'Saving...' : packageId ? 'Update Package' : 'Create Package'}

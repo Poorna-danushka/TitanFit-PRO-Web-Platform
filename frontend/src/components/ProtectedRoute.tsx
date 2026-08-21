@@ -6,8 +6,12 @@ const ProtectedRoute = () => {
 
   if (loading) return <LoadingScreen />;
   if (!user) return <Navigate to="/login" replace />;
-  // If an admin tries to access user routes, redirect to admin panel
-  if (user.role === 'admin') return <Navigate to="/admin/dashboard" replace />;
+
+  const uRole = (user.role || '').toUpperCase();
+  const isAdmin = ['ADMIN', 'SYSTEM_ADMIN'].includes(uRole) || Boolean((user as any)?.isSystemAdmin);
+
+  // If an admin or system admin tries to access user routes, redirect to admin panel
+  if (isAdmin) return <Navigate to="/admin/dashboard" replace />;
 
   return <Outlet />;
 };

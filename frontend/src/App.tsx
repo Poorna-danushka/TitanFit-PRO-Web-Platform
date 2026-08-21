@@ -4,11 +4,17 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Home from './pages/Home';
 import Dashboard from './pages/Dashboard';
+import StaffDashboard from './pages/StaffDashboard';
+import TrainerDashboard from './pages/TrainerDashboard';
 import PackageList from './pages/PackageList';
 import MyPackage from './pages/MyPackage';
 import ExerciseView from './pages/ExerciseView';
 import Profile from './pages/Profile';
 import Workouts from './pages/Workouts';
+import Trainers from './pages/Trainers';
+import AttendanceQR from './pages/AttendanceQR';
+import ProgressPage from './pages/ProgressPage';
+
 import UserNotificationsPage from './pages/UserNotificationsPage';
 
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -20,30 +26,41 @@ import ManageNotifications from './pages/admin/ManageNotifications';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
+import AnyUserRoute from './components/AnyUserRoute';
+import RoleAdaptiveLayout from './components/RoleAdaptiveLayout';
+import RoleRoute from './components/RoleRoute';
 import UserLayout from './components/UserLayout';
 import AdminLayout from './components/AdminLayout';
 import Notifications from './components/Notifications';
 
-// Smart root: redirect to the right place if already logged in
+// ─── Role-based dashboard redirect helper ─────────────────────────────────────
+function getDashboardPathForRole(role?: string, isSystemAdmin?: boolean): string {
+  const normalized = (role || 'MEMBER').toUpperCase();
+  if (normalized === 'SYSTEM_ADMIN' || isSystemAdmin) return '/admin/dashboard';
+  if (normalized === 'ADMIN') return '/admin/dashboard';
+  if (normalized === 'STAFF') return '/staff/dashboard';
+  if (normalized === 'TRAINER') return '/trainer/dashboard';
+  return '/dashboard';
+}
+
 function RootRedirect() {
   const { user, loading } = useAuth();
   if (loading) return null;
   if (!user) return <Home />;
-  if (user.role === 'admin') return <Navigate to="/admin/dashboard" replace />;
-  return <Navigate to="/dashboard" replace />;
+  return <Navigate to={getDashboardPathForRole(user.role, user.isSystemAdmin)} replace />;
 }
 
 function LoginRedirect() {
   const { user, loading } = useAuth();
   if (loading) return null;
-  if (user) return <Navigate to={user.role === 'admin' ? '/admin/dashboard' : '/dashboard'} replace />;
+  if (user) return <Navigate to={getDashboardPathForRole(user.role, user.isSystemAdmin)} replace />;
   return <Login />;
 }
 
 function RegisterRedirect() {
   const { user, loading } = useAuth();
   if (loading) return null;
-  if (user) return <Navigate to={user.role === 'admin' ? '/admin/dashboard' : '/dashboard'} replace />;
+  if (user) return <Navigate to={getDashboardPathForRole(user.role, user.isSystemAdmin)} replace />;
   return <Register />;
 }
 
@@ -58,29 +75,55 @@ function App() {
           <Route path="/login" element={<LoginRedirect />} />
           <Route path="/register" element={<RegisterRedirect />} />
 
-          {/* User-only Routes */}
-          <Route element={<ProtectedRoute />}>
-            <Route element={<UserLayout />}>
-              <Route path="/dashboard"          element={<Dashboard />} />
-              <Route path="/packages"           element={<PackageList />} />
-              <Route path="/my-package"         element={<MyPackage />} />
-              <Route path="/workouts"           element={<Workouts />} />
-              <Route path="/exercises/:id"      element={<ExerciseView />} />
-              <Route path="/profile"            element={<Profile />} />
-              <Route path="/notifications"      element={<UserNotificationsPage />} />
+          {/* ─── Universal routes: accessible by ANY authenticated user (any role) ─── */}
+          {/* Profile & Notifications work for Members, Staff, Trainers, Admin, System Admin */}
+          {/* RoleAdaptiveLayout picks AdminLayout for admins, UserLayout for everyone else */}
+          <Route element={<AnyUserRoute />}>
+            <Route element={<RoleAdaptiveLayout />}>
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/notifications" element={<UserNotificationsPage />} />
             </Route>
           </Route>
 
-          {/* Admin-only Routes */}
+          {/* ─── Member / User routes ─── */}
+          <Route element={<ProtectedRoute />}>
+            <Route element={<UserLayout />}>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/packages" element={<PackageList />} />
+              <Route path="/my-package" element={<MyPackage />} />
+              <Route path="/workouts" element={<Workouts />} />
+              <Route path="/trainers" element={<Trainers />} />
+              <Route path="/attendance-qr" element={<AttendanceQR />} />
+              <Route path="/progress" element={<ProgressPage />} />
+
+              <Route path="/exercises/:id" element={<ExerciseView />} />
+            </Route>
+          </Route>
+
+          {/* ─── Staff Dashboard ─── */}
+          <Route element={<RoleRoute allowedRoles={['STAFF', 'ADMIN', 'SYSTEM_ADMIN']} />}>
+            <Route element={<UserLayout />}>
+              <Route path="/staff/dashboard" element={<StaffDashboard />} />
+            </Route>
+          </Route>
+
+          {/* ─── Trainer Dashboard ─── */}
+          <Route element={<RoleRoute allowedRoles={['TRAINER', 'ADMIN', 'SYSTEM_ADMIN']} />}>
+            <Route element={<UserLayout />}>
+              <Route path="/trainer/dashboard" element={<TrainerDashboard />} />
+            </Route>
+          </Route>
+
+          {/* ─── Admin & System Admin Routes ─── */}
           <Route path="/admin" element={<AdminRoute />}>
             <Route index element={<Navigate to="/admin/dashboard" replace />} />
             <Route element={<AdminLayout />}>
-              <Route path="dashboard"      element={<AdminDashboard />} />
-              <Route path="packages"       element={<ManagePackages />} />
-              <Route path="exercises"      element={<ManageExercises />} />
-              <Route path="users"          element={<ManageUsers />} />
-              <Route path="purchases"      element={<ManagePurchases />} />
-              <Route path="notifications"  element={<ManageNotifications />} />
+              <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="packages" element={<ManagePackages />} />
+              <Route path="exercises" element={<ManageExercises />} />
+              <Route path="users" element={<ManageUsers />} />
+              <Route path="purchases" element={<ManagePurchases />} />
+              <Route path="notifications" element={<ManageNotifications />} />
             </Route>
           </Route>
 

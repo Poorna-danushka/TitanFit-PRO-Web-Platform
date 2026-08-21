@@ -6,8 +6,12 @@ const AdminRoute = () => {
 
   if (loading) return <LoadingScreen />;
   if (!user) return <Navigate to="/login" replace />;
+
+  const uRole = (user.role || '').toUpperCase();
+  const isAdmin = ['ADMIN', 'SYSTEM_ADMIN', 'STAFF'].includes(uRole) || Boolean((user as any)?.isSystemAdmin);
+
   // Non-admins trying to access admin routes go to user dashboard
-  if (user.role !== 'admin') return <Navigate to="/dashboard" replace />;
+  if (!isAdmin) return <Navigate to="/dashboard" replace />;
 
   return <Outlet />;
 };

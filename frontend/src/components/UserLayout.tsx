@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import UserSidebar from './UserSidebar';
 import Navbar from './Navbar';
+import ChatBot from './ChatBot';
 import { Home, Dumbbell, Package, User, Bell } from 'lucide-react';
 import { useAnnouncements } from '../hooks/useNotifications';
 
@@ -102,6 +103,9 @@ export default function UserLayout() {
         </div>
         <div className="h-safe-bottom bg-[#0a0a0a]" style={{ height: 'env(safe-area-inset-bottom, 0px)' }} />
       </nav>
+
+      {/* AI FitBot Chat Widget */}
+      <ChatBot />
     </div>
   );
 }
