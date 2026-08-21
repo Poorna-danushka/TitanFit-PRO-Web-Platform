@@ -73,16 +73,37 @@ export default function MyPackage() {
           </div>
           <h1 className="text-4xl font-bold mb-4">{pkg.name}</h1>
           <p className="text-gray-400 text-lg mb-6 max-w-2xl">{pkg.description}</p>
-          <div className="flex gap-8">
+          <div className="flex gap-8 mb-6">
             <div>
               <p className="text-gray-500 text-sm mb-1">Duration</p>
-              <p className="font-bold text-xl">{pkg.duration}</p>
+              <p className="font-bold text-xl">{pkg.duration || '1 Month'}</p>
             </div>
             <div>
-              <p className="text-gray-500 text-sm mb-1">Total Exercises</p>
-              <p className="font-bold text-xl">{pkg.exercises?.length || 0}</p>
+              <p className="text-gray-500 text-sm mb-1">Price</p>
+              <p className="font-bold text-xl text-green-400">LKR {(pkg.price || 0).toLocaleString()}</p>
+            </div>
+            <div>
+              <p className="text-gray-500 text-sm mb-1">Plan Features</p>
+              <p className="font-bold text-xl">{(pkg.benefits || pkg.features || []).length || pkg.exercises?.length || 0}</p>
             </div>
           </div>
+
+          {(pkg.benefits || pkg.features) && (
+            <div className="pt-4 border-t border-gray-800">
+              <p className="text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wider">Included Features & Perks:</p>
+              <div className="flex flex-wrap gap-2">
+                {(pkg.benefits || pkg.features).map((feat: any, idx: number) => {
+                  const label = typeof feat === 'string' ? feat : feat.name || feat;
+                  return (
+                    <span key={idx} className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-500/10 text-green-400 border border-green-500/20 text-xs font-semibold rounded-lg">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      {label}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </motion.div>
 

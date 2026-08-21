@@ -10,6 +10,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Link } from 'react-router-dom';
 import { useAnnouncements, AnnouncementType } from '../hooks/useNotifications';
 
+
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const MOTIVATIONAL_QUOTES = [
@@ -165,7 +166,9 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="space-y-6 pb-12">
+    <div>
+      {/* ── Main content ─────────────────────────────── */}
+      <div className="space-y-6 pb-12">
 
       {/* Pinned Announcements Banner */}
       {actualVisible.length > 0 && (
@@ -410,6 +413,9 @@ export default function Dashboard() {
           <ArrowRight className="w-4 h-4 text-gray-700 group-hover:text-blue-400 ml-auto transition-colors" />
         </Link>
       </motion.div>
+      </div>
+
+
     </div>
   );
 }

@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
+import LogoIcon from '../components/LogoIcon';
 import { Link } from 'react-router-dom';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { Activity, Dumbbell, CalendarCheck, ShieldCheck, ArrowRight, Zap, Check, Sparkles } from 'lucide-react';
 import { packageAPI, exerciseAPI } from '../api/apiService';
+import ChatBot from '../components/ChatBot';
+
 
 const Home = () => {
   const [packages, setPackages] = useState<any[]>([]);
@@ -51,12 +54,13 @@ const Home = () => {
       {/* Navbar */}
       <nav className="fixed w-full z-50 bg-[#0a0a0c]/30 backdrop-blur-lg border-b border-white/[0.03] transition-all">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center shadow-[0_0_20px_rgba(52,211,153,0.3)] group-hover:shadow-[0_0_30px_rgba(52,211,153,0.5)] transition-all">
-              <Dumbbell className="text-black w-6 h-6 transform -rotate-12 group-hover:rotate-0 transition-transform duration-500" />
-            </div>
-            <span className="text-2xl font-extrabold tracking-tight">GymFit<span className="text-green-500">Pro</span></span>
-          </Link>
+          <Link to="/" className="flex items-center gap-3 group">
+          <LogoIcon size="md" variant="green" />
+          <span className="text-2xl brand-logo-title tracking-tight text-white flex items-center gap-2 font-extrabold">
+            <span>TITAN<span className="text-green-400">FIT</span></span>
+            <span className="brand-accent-badge text-xs">PRO</span>
+          </span>
+        </Link>
           <div className="hidden md:flex gap-10 text-sm font-semibold text-gray-400 uppercase tracking-wider">
             <a href="#features" className="hover:text-white transition-colors relative group">
               Features
@@ -110,7 +114,7 @@ const Home = () => {
             className="text-5xl md:text-7xl font-extrabold leading-[1.2] mb-8 tracking-tight"
           >
             Sculpt Your Legacy <br className="hidden md:block" />
-            With <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-emerald-400 to-green-600">GymFit Pro</span>
+            With <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-emerald-400 to-green-600">TitanFit Pro</span>
           </motion.h1>
 
           <motion.p 
@@ -137,6 +141,8 @@ const Home = () => {
           </motion.div>
         </div>
       </section>
+
+
 
       {/* Features Section */}
       <section id="features" className="py-32 relative">
@@ -189,7 +195,7 @@ const Home = () => {
           </motion.div>
 
           <div className="grid lg:grid-cols-3 gap-8 items-center">
-            {packages.map((pkg, idx) => {
+            {packages.map((pkg: any, idx: number) => {
               const isPopular = idx === 1 || pkg.name.toLowerCase().includes('premium');
               return (
                 <motion.div 
@@ -219,20 +225,23 @@ const Home = () => {
                   <div className={`p-10 pb-6 ${isPopular ? 'pt-12' : ''}`}>
                     <h3 className="text-2xl md:text-3xl font-bold mb-4">{pkg.name}</h3>
                     <div className="flex items-end gap-1 mb-6">
-                      <span className="text-5xl md:text-6xl font-extrabold tracking-tight">${pkg.price}</span>
+                      <span className="text-4xl md:text-5xl font-extrabold tracking-tight">LKR {(pkg.price || 0).toLocaleString()}</span>
                       <span className="text-gray-400 font-medium mb-2">/{pkg.duration}</span>
                     </div>
                     <p className="text-gray-400 text-sm leading-relaxed mb-8 border-b border-white/5 pb-8">{pkg.description}</p>
                     
                     <div className="space-y-4 mb-10">
-                      {pkg.exercises?.slice(0, 4).map((ex: any) => (
-                        <div key={ex._id} className="flex items-center gap-4">
-                          <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${isPopular ? 'bg-green-500/20' : 'bg-white/5'}`}>
-                            <Check className={`w-3.5 h-3.5 ${isPopular ? 'text-green-400' : 'text-gray-400'}`} strokeWidth={3} />
+                      {(pkg.benefits || pkg.features || (pkg.exercises?.map((e: any) => e.name) || [])).slice(0, 4).map((item: any, idx: number) => {
+                        const label = typeof item === 'string' ? item : item.name || item;
+                        return (
+                          <div key={idx} className="flex items-center gap-4">
+                            <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${isPopular ? 'bg-green-500/20' : 'bg-white/5'}`}>
+                              <Check className={`w-3.5 h-3.5 ${isPopular ? 'text-green-400' : 'text-gray-400'}`} strokeWidth={3} />
+                            </div>
+                            <span className="font-medium text-gray-300">{label}</span>
                           </div>
-                          <span className="font-medium text-gray-300">{ex.name}</span>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                   
@@ -268,7 +277,7 @@ const Home = () => {
           </motion.div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {exercises.map((ex, idx) => (
+            {exercises.map((ex: any, idx: number) => (
               <motion.div 
                 key={ex._id}
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -309,39 +318,46 @@ const Home = () => {
       <footer className="bg-black py-16 border-t border-white/10 relative z-20">
         <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-4 gap-12">
           <div className="col-span-2">
-            <div className="flex items-center gap-2 mb-6">
-              <Dumbbell className="text-green-500 w-8 h-8" />
-              <span className="text-2xl font-extrabold tracking-tight">GymFit<span className="text-green-500">Pro</span></span>
+            <div className="flex items-center gap-3 mb-6">
+              <LogoIcon size="md" variant="green" />
+              <span className="text-2xl brand-logo-title tracking-tight text-white flex items-center gap-2 font-extrabold">
+                <span>TITAN<span className="text-green-400">FIT</span></span>
+                <span className="brand-accent-badge text-xs">PRO</span>
+              </span>
             </div>
-            <p className="text-gray-500 text-base max-w-sm leading-relaxed">
-              Empowering your fitness journey through cutting-edge technology and expertly crafted training programs.
+            <p className="text-gray-400 text-sm mb-6 max-w-sm">
+              Empowering individuals to achieve their ultimate fitness potential with smart tracking, expert packages, and AI coaching.
             </p>
           </div>
           <div>
-            <h4 className="font-bold text-white mb-6 uppercase tracking-wider text-sm">Navigation</h4>
-            <ul className="space-y-4 text-gray-500 font-medium">
-              <li><a href="#features" className="hover:text-green-400 transition-colors">Features</a></li>
-              <li><a href="#packages" className="hover:text-green-400 transition-colors">Training Packages</a></li>
-              <li><Link to="/login" className="hover:text-green-400 transition-colors">Sign In</Link></li>
+            <h4 className="text-white font-bold mb-4 uppercase text-xs tracking-wider">Quick Links</h4>
+            <ul className="space-y-2 text-sm text-gray-400">
+              <li><Link to="/packages" className="hover:text-green-400 transition-colors">Packages</Link></li>
+              <li><Link to="/workouts" className="hover:text-green-400 transition-colors">Workouts</Link></li>
+              <li><Link to="/trainers" className="hover:text-green-400 transition-colors">Trainers</Link></li>
+              <li><Link to="/login" className="hover:text-green-400 transition-colors">Member Sign In</Link></li>
             </ul>
           </div>
           <div>
-            <h4 className="font-bold text-white mb-6 uppercase tracking-wider text-sm">Contact Us</h4>
-            <ul className="space-y-4 text-gray-500 font-medium">
-              <li>support@gymfitpro.com</li>
-              <li>1-800-GYM-FIT</li>
-              <li>Los Angeles, CA</li>
+            <h4 className="text-white font-bold mb-4 uppercase text-xs tracking-wider">Contact Us</h4>
+            <ul className="space-y-2 text-sm text-gray-400">
+              <li>support@titanfitpro.com</li>
+              <li>+1 (800) 555-TITAN</li>
+              <li>100 Fitness Boulevard</li>
             </ul>
           </div>
         </div>
-        <div className="max-w-7xl mx-auto px-6 mt-16 pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4 text-gray-600 font-medium">
-          <p>&copy; {new Date().getFullYear()} GymFit Pro. All rights reserved.</p>
-          <div className="flex gap-6">
+        <div className="border-t border-white/5 pt-8 text-center text-xs text-gray-500">
+          <p>&copy; {new Date().getFullYear()} TitanFit Pro. All rights reserved.</p>
+          <div className="flex gap-6 justify-center mt-4">
             <span className="hover:text-white cursor-pointer transition-colors">Privacy Policy</span>
             <span className="hover:text-white cursor-pointer transition-colors">Terms of Service</span>
           </div>
         </div>
       </footer>
+
+      {/* FitBot — public chatbot, personal queries prompt login */}
+      <ChatBot isPublic />
 
     </div>
   );
