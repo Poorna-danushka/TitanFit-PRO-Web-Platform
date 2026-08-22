@@ -60,10 +60,14 @@ export default function AdminSidebar({ onClose }: Props) {
       {/* Admin profile pill */}
       <div className={`mx-4 mt-4 mb-2 p-3 rounded-2xl border flex items-center gap-3 ${isSysAdmin ? 'bg-gradient-to-br from-amber-500/10 to-transparent border-amber-500/20' : 'bg-gradient-to-br from-purple-500/10 to-transparent border-purple-500/15'}`}>
         <div
-          className={`w-9 h-9 rounded-full bg-gradient-to-br ${avatarColor} flex items-center justify-center font-bold text-sm shrink-0`}
+          className={`w-9 h-9 rounded-full bg-gradient-to-br ${avatarColor} flex items-center justify-center font-bold text-sm shrink-0 overflow-hidden`}
           style={{ boxShadow: avatarGlow }}
         >
-          {(user?.name || user?.firstName || 'A').charAt(0).toUpperCase()}
+          {user?.profileImage ? (
+            <img src={user.profileImage} alt={user?.name || 'Admin'} className="w-full h-full object-cover" />
+          ) : (
+            (user?.name || user?.firstName || 'A').charAt(0).toUpperCase()
+          )}
         </div>
         <div className="min-w-0">
           <p className="font-semibold text-sm truncate text-white">{user?.name || 'Admin'}</p>

@@ -23,7 +23,14 @@ export interface User {
   bio?: string;
   gender?: string;
   dateOfBirth?: string;
-  profileImage?: string;
+  /** Cloudinary secure_url for the profile avatar */
+  profileImage?: string | null;
+  /** Cloudinary public_id for clean deletion/replacement */
+  profileImagePublicId?: string | null;
+  /** Alias: same as profileImage (Cloudinary secure_url) */
+  avatarUrl?: string | null;
+  /** Alias: same as profileImagePublicId */
+  avatarPublicId?: string | null;
   weight?: number;
   height?: number;
   isEmailVerified?: boolean;

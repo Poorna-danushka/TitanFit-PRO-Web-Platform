@@ -163,8 +163,12 @@ export default function ManagePurchases() {
                       >
                         <td className="p-5 pl-8">
                           <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500/20 to-amber-600/10 text-orange-400 flex items-center justify-center font-bold text-lg ring-1 ring-orange-500/30 shadow-inner">
-                              {(p.userId?.name || 'U').charAt(0).toUpperCase()}
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500/20 to-amber-600/10 text-orange-400 flex items-center justify-center font-bold text-lg ring-1 ring-orange-500/30 shadow-inner overflow-hidden shrink-0">
+                              {p.userId?.profileImage ? (
+                                <img src={p.userId.profileImage} alt={p.userId?.name || 'U'} className="w-full h-full object-cover" />
+                              ) : (
+                                (p.userId?.name || 'U').charAt(0).toUpperCase()
+                              )}
                             </div>
                             <div className="flex flex-col">
                               <span className="font-bold text-gray-200 text-sm group-hover:text-white transition-colors">

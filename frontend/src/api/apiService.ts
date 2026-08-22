@@ -106,6 +106,18 @@ export const authAPI = {
   getMe: () => api.get('/auth/me'),
   updateProfile: (data: { name?: string; phone?: string; bio?: string; gender?: string; dateOfBirth?: string; weight?: number; height?: number; profileImage?: string }) =>
     api.put('/auth/profile', data),
+  uploadAvatar: (formData: FormData) =>
+    api.post('/auth/avatar', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+  deleteAvatar: () =>
+    api.delete('/auth/avatar'),
+  uploadGalleryImage: (formData: FormData) =>
+    api.post('/auth/gallery', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+  deleteGalleryImage: (imageId: string) =>
+    api.delete(`/auth/gallery/${imageId}`),
   changePassword: (currentPassword: string, newPassword: string) =>
     api.put('/auth/change-password', { currentPassword, newPassword }),
   requestPasswordReset: (email: string) =>

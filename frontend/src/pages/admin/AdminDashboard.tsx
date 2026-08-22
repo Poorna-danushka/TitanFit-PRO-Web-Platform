@@ -333,8 +333,12 @@ export default function AdminDashboard() {
                     transition={{ delay: 0.6 + i * 0.04 }}
                     className="px-4 py-3 flex items-center gap-3"
                   >
-                    <div className="w-7 h-7 rounded-full bg-purple-500/20 text-purple-400 font-bold text-xs flex items-center justify-center shrink-0">
-                      {(p.userId?.name || 'U').charAt(0).toUpperCase()}
+                    <div className="w-7 h-7 rounded-full bg-purple-500/20 text-purple-400 font-bold text-xs flex items-center justify-center shrink-0 overflow-hidden">
+                      {p.userId?.profileImage ? (
+                        <img src={p.userId.profileImage} alt={p.userId?.name || 'U'} className="w-full h-full object-cover" />
+                      ) : (
+                        (p.userId?.name || 'U').charAt(0).toUpperCase()
+                      )}
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-xs font-medium text-gray-300 truncate">{p.userId?.name || '—'}</p>

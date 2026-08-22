@@ -55,10 +55,14 @@ export default function UserSidebar({ onClose }: Props) {
       {/* User profile pill */}
       <div className="mx-4 mt-4 mb-2 p-3 rounded-2xl bg-gradient-to-br from-green-500/10 to-transparent border border-green-500/15 flex items-center gap-3">
         <div
-          className="w-9 h-9 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center font-bold text-black text-sm shrink-0"
+          className="w-9 h-9 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center font-bold text-black text-sm shrink-0 overflow-hidden"
           style={{ boxShadow: '0 0 12px rgba(34,197,94,0.3)' }}
         >
-          {user?.name?.charAt(0).toUpperCase() || 'U'}
+          {user?.profileImage ? (
+            <img src={user.profileImage} alt={user?.name || 'User'} className="w-full h-full object-cover" />
+          ) : (
+            user?.name?.charAt(0).toUpperCase() || 'U'
+          )}
         </div>
         <div className="min-w-0">
           <p className="font-semibold text-sm truncate text-white">{user?.name || 'Member'}</p>

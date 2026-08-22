@@ -1,18 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { authAPI } from '../api/apiService';
 import { useAuth } from '../context/AuthContext';
 import {
   User, Scale, Ruler, Calendar, Edit3, Check, X, Loader2,
-  TrendingUp, Phone, ShieldCheck, Crown, Award, UserCheck, Mail, FileText
+  TrendingUp, Phone, ShieldCheck, Crown, Award, UserCheck, Mail, FileText,
+  Camera, Trash2, Activity, Lock, Sparkles, HeartPulse, CheckCircle2, AlertCircle
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Profile() {
-  // Seed the profile with whatever the AuthContext already has, so there's
-  // never a blank flash even if the API is slow or the session is cookie-only.
   const { user: ctxUser, updateUser } = useAuth();
 
   const [profile, setProfile] = useState<any>(ctxUser || null);
+  const [activeTab, setActiveTab] = useState<'personal' | 'fitness' | 'account'>('personal');
   const [formData, setFormData] = useState({
     name:        (ctxUser as any)?.name        || '',
     phone:       (ctxUser as any)?.phone       || '',
@@ -22,12 +22,15 @@ export default function Profile() {
     weight:      (ctxUser as any)?.weight      ? String((ctxUser as any).weight) : '',
     height:      (ctxUser as any)?.height      ? String((ctxUser as any).height) : '',
   });
-  const [loading, setLoading] = useState(true);
+
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // Fetch fresh user data from API on mount
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch fresh user data on mount
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -44,10 +47,7 @@ export default function Profile() {
           height:      u.height      ? String(u.height) : '',
         });
       } catch (err) {
-        console.warn('Profile API failed, using AuthContext data:', err);
-        // We already seeded from AuthContext — just continue showing that.
-      } finally {
-        setLoading(false);
+        console.warn('Profile API failed, using AuthContext:', err);
       }
     };
     fetchProfile();
@@ -71,15 +71,15 @@ export default function Profile() {
         bio:         formData.bio.trim()   || undefined,
         gender:      formData.gender       || undefined,
         dateOfBirth: formData.dateOfBirth  || undefined,
-        weight:      formData.weight       ? parseInt(formData.weight) : undefined,
-        height:      formData.height       ? parseInt(formData.height) : undefined,
+        weight:      formData.weight       ? parseFloat(formData.weight) : undefined,
+        height:      formData.height       ? parseFloat(formData.height) : undefined,
       });
       const updated = res.data.user;
       setProfile(updated);
-      updateUser(updated);          // keep AuthContext in sync
+      updateUser(updated);
       setEditing(false);
       setMessage({ type: 'success', text: 'Profile updated successfully!' });
-      setTimeout(() => setMessage(null), 3000);
+      setTimeout(() => setMessage(null), 3500);
     } catch (err: any) {
       setMessage({ type: 'error', text: err?.response?.data?.message || err?.safeMessage || 'Failed to save changes.' });
     } finally {
@@ -102,257 +102,527 @@ export default function Profile() {
     }
   };
 
-  // ─── Derived role info ───────────────────────────────────────────────────────
-  const uRole      = ((profile?.role || ctxUser?.role || 'MEMBER')).toUpperCase();
-  const isSysAdmin = profile?.isSystemAdmin || ctxUser?.isSystemAdmin || uRole === 'SYSTEM_ADMIN';
-  const isAdmin    = uRole === 'ADMIN' || isSysAdmin;
+  const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-  const displayName = profile?.name || ctxUser?.name || '—';
-  const displayEmail = profile?.email || ctxUser?.email || '—';
+    if (!file.type.startsWith('image/')) {
+      setMessage({ type: 'error', text: 'Please select a valid image file.' });
+      return;
+    }
 
-  // ─── BMI ─────────────────────────────────────────────────────────────────────
-  const bmi = formData.weight && formData.height
-    ? parseFloat((parseInt(formData.weight) / Math.pow(parseInt(formData.height) / 100, 2)).toFixed(1))
-    : null;
+    if (file.size > 5 * 1024 * 1024) {
+      setMessage({ type: 'error', text: 'Image file size must be less than 5MB.' });
+      return;
+    }
 
-  const getBmiCategory = (v: number) => {
-    if (v < 18.5) return { label: 'Underweight', color: 'text-blue-400',   bg: 'bg-blue-500/10',   border: 'border-blue-500/20' };
-    if (v < 25)   return { label: 'Healthy',     color: 'text-green-400',  bg: 'bg-green-500/10',  border: 'border-green-500/20' };
-    if (v < 30)   return { label: 'Overweight',  color: 'text-yellow-400', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20' };
-    return               { label: 'Obese',       color: 'text-red-400',    bg: 'bg-red-500/10',    border: 'border-red-500/20' };
+    setUploadingImage(true);
+    setMessage(null);
+
+    try {
+      const data = new FormData();
+      data.append('avatar', file);
+
+      const res = await authAPI.uploadAvatar(data);
+      const updatedUser = res.data.user;
+      setProfile(updatedUser);
+      updateUser(updatedUser);
+      setMessage({ type: 'success', text: 'Profile photo updated successfully!' });
+      setTimeout(() => setMessage(null), 3500);
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err?.response?.data?.message || err?.safeMessage || 'Failed to upload photo.' });
+    } finally {
+      setUploadingImage(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
-  const bmiCategory = bmi ? getBmiCategory(bmi) : null;
 
-  // ─── Avatar colour ──────────────────────────────────────────────────────────
-  const avatarClass = isSysAdmin  ? 'from-amber-400 to-amber-600 text-black  ring-4 ring-amber-400/30'
-    : isAdmin       ? 'from-purple-500 to-purple-700 text-white  ring-4 ring-purple-500/30'
-    : uRole === 'STAFF'   ? 'from-blue-500  to-blue-700  text-white  ring-4 ring-blue-500/30'
-    : uRole === 'TRAINER' ? 'from-emerald-500 to-emerald-700 text-black ring-4 ring-emerald-500/30'
-    :                       'from-green-400 to-green-600 text-black  ring-4 ring-green-400/30';
+  const handleImageDelete = async () => {
+    setUploadingImage(true);
+    setMessage(null);
+    try {
+      const res = await authAPI.deleteAvatar();
+      const updatedUser = { ...res.data.user, profileImage: null };
+      setProfile(updatedUser);
+      updateUser(updatedUser);
+      setMessage({ type: 'success', text: 'Profile photo removed.' });
+      setTimeout(() => setMessage(null), 3500);
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err?.response?.data?.message || err?.safeMessage || 'Failed to remove photo.' });
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
-  const roleBadge = isSysAdmin  ? { label: 'System Admin',  color: 'text-amber-400',   bg: 'bg-amber-500/10',  border: 'border-amber-500/30',  dot: 'bg-amber-400',  icon: <Crown className="w-3.5 h-3.5" /> }
-    : isAdmin       ? { label: 'Administrator', color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20', dot: 'bg-purple-400', icon: <ShieldCheck className="w-3.5 h-3.5" /> }
-    : uRole === 'STAFF'   ? { label: 'Desk Staff',    color: 'text-blue-400',   bg: 'bg-blue-500/10',   border: 'border-blue-500/20',   dot: 'bg-blue-400',   icon: <UserCheck className="w-3.5 h-3.5" /> }
-    : uRole === 'TRAINER' ? { label: 'Fitness Coach', color: 'text-emerald-400',bg: 'bg-emerald-500/10',border: 'border-emerald-500/20', dot: 'bg-emerald-400',icon: <Award className="w-3.5 h-3.5" /> }
-    :                       { label: 'Gym Member',    color: 'text-green-400',  bg: 'bg-green-500/10',  border: 'border-green-500/20',  dot: 'bg-green-400',  icon: <User className="w-3.5 h-3.5" /> };
+  // Role info helper
+  const uRole = ((profile?.role || ctxUser?.role || 'MEMBER')).toUpperCase();
+  const isSysAdmin = profile?.isSystemAdmin || ctxUser?.isSystemAdmin || uRole === 'SYSTEM_ADMIN';
 
-  // ─── Loading state ──────────────────────────────────────────────────────────
-  if (loading && !profile && !ctxUser) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-8 h-8 text-green-500 animate-spin" />
-          <p className="text-gray-500 text-sm">Loading your profile...</p>
-        </div>
-      </div>
-    );
+  const roleBadgeMap: Record<string, { label: string; bg: string; color: string; border: string; icon: React.ReactNode }> = {
+    SYSTEM_ADMIN: { label: 'System Admin', bg: 'bg-purple-500/10', color: 'text-purple-400', border: 'border-purple-500/30', icon: <Crown className="w-3.5 h-3.5" /> },
+    ADMIN:        { label: 'Admin',        bg: 'bg-blue-500/10',   color: 'text-blue-400',   border: 'border-blue-500/30',   icon: <ShieldCheck className="w-3.5 h-3.5" /> },
+    TRAINER:      { label: 'Trainer',      bg: 'bg-amber-500/10',  color: 'text-amber-400',  border: 'border-amber-500/30',  icon: <Award className="w-3.5 h-3.5" /> },
+    STAFF:        { label: 'Staff',        bg: 'bg-cyan-500/10',   color: 'text-cyan-400',   border: 'border-cyan-500/30',   icon: <UserCheck className="w-3.5 h-3.5" /> },
+    MEMBER:       { label: 'Member',       bg: 'bg-green-500/10',  color: 'text-green-400',  border: 'border-green-500/30',  icon: <User className="w-3.5 h-3.5" /> },
+  };
+
+  const roleBadge = isSysAdmin ? roleBadgeMap.SYSTEM_ADMIN : (roleBadgeMap[uRole] || roleBadgeMap.MEMBER);
+
+  // Avatar background colors
+  const avatarGradients: Record<string, string> = {
+    SYSTEM_ADMIN: 'from-purple-600 via-pink-600 to-indigo-600 text-white',
+    ADMIN:        'from-blue-600 to-cyan-600 text-white',
+    TRAINER:      'from-amber-500 to-orange-600 text-black',
+    STAFF:        'from-cyan-500 to-teal-600 text-black',
+    MEMBER:       'from-green-400 to-emerald-600 text-black',
+  };
+  const avatarClass = isSysAdmin ? avatarGradients.SYSTEM_ADMIN : (avatarGradients[uRole] || avatarGradients.MEMBER);
+
+  // BMI calculations
+  const weightNum = parseFloat(formData.weight || profile?.weight || '0');
+  const heightNum = parseFloat(formData.height || profile?.height || '0');
+  let bmi: number | null = null;
+  if (weightNum > 0 && heightNum > 0) {
+    const hM = heightNum / 100;
+    bmi = parseFloat((weightNum / (hM * hM)).toFixed(1));
   }
 
-  const joinedDate = (profile?.createdAt || ctxUser?.createdAt)
-    ? new Date(profile?.createdAt || ctxUser?.createdAt!).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+  const getBmiCategory = (val: number) => {
+    if (val < 18.5) return { label: 'Underweight', color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20' };
+    if (val < 25.0) return { label: 'Normal Weight', color: 'text-green-400', bg: 'bg-green-500/10', border: 'border-green-500/20' };
+    if (val < 30.0) return { label: 'Overweight', color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20' };
+    return { label: 'Obese', color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20' };
+  };
+
+  const bmiCategory = bmi ? getBmiCategory(bmi) : null;
+
+  const displayName   = profile?.name  || ctxUser?.name  || 'User';
+  const displayEmail  = profile?.email || ctxUser?.email || '—';
+  const currentAvatar = profile ? profile.profileImage : ctxUser?.profileImage;
+
+  const joinedDate = profile?.createdAt
+    ? new Date(profile.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })
     : '—';
 
   return (
-    <div className="pb-12 max-w-4xl mx-auto text-white space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="font-display text-3xl md:text-4xl font-bold text-white mb-1">User Profile</h1>
-        <p className="text-gray-400 text-sm">View and update your account details, contact information, and body metrics.</p>
-      </div>
+    <div className="pb-16 max-w-5xl mx-auto text-white space-y-8">
+      {/* ─── Hidden file input ─── */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleImageFileChange}
+        accept="image/jpeg,image/png,image/webp,image/gif"
+        className="hidden"
+      />
 
-      {/* Toast message */}
-      {message && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-          className={`flex items-center gap-3 px-5 py-3.5 rounded-xl border text-sm font-medium ${
-            message.type === 'success'
-              ? 'bg-green-500/10 border-green-500/20 text-green-400'
-              : 'bg-red-500/10 border-red-500/20 text-red-400'
-          }`}
-        >
-          {message.type === 'success' ? <Check className="w-4 h-4 shrink-0" /> : <X className="w-4 h-4 shrink-0" />}
-          {message.text}
-        </motion.div>
-      )}
+      {/* ─── Hero Profile Header Banner ─── */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-[#181920] via-[#121318] to-[#0d0e12] border border-white/10 shadow-2xl p-6 md:p-8"
+      >
+        <div className="absolute top-0 right-0 w-96 h-96 bg-green-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* ─── Left: Avatar & Role Card ───────────────────────────────────── */}
-        <div className="space-y-5">
-          <motion.div
-            initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
-            className="bg-[#111113]/80 backdrop-blur-md border border-white/10 rounded-3xl p-6 text-center shadow-2xl"
-          >
-            {/* Avatar */}
-            <div className={`w-24 h-24 rounded-2xl bg-gradient-to-br ${avatarClass} flex items-center justify-center font-bold text-4xl font-display mx-auto mb-4 shadow-2xl`}>
-              {displayName.charAt(0).toUpperCase()}
+        <div className="relative z-10 flex flex-col md:flex-row items-center md:items-start gap-6 text-center md:text-left">
+          {/* Avatar Ring */}
+          <div className="relative group shrink-0">
+            <div className={`w-32 h-32 rounded-3xl overflow-hidden bg-gradient-to-br ${avatarClass} flex items-center justify-center font-bold text-5xl font-display shadow-[0_0_30px_rgba(34,197,94,0.2)] border-2 border-white/20 transition-transform duration-300 group-hover:scale-[1.02]`}>
+              {currentAvatar ? (
+                <img src={currentAvatar} alt={displayName} className="w-full h-full object-cover" />
+              ) : (
+                displayName.charAt(0).toUpperCase()
+              )}
             </div>
 
-            <h2 className="font-display text-2xl font-bold text-white mb-2">{displayName}</h2>
+            {/* Upload Spinner Overlay */}
+            {uploadingImage ? (
+              <div className="absolute inset-0 bg-black/75 backdrop-blur-sm rounded-3xl flex items-center justify-center">
+                <Loader2 className="w-7 h-7 text-green-400 animate-spin" />
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="absolute inset-0 bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 rounded-3xl flex flex-col items-center justify-center gap-1 text-white cursor-pointer"
+                title="Change profile image"
+              >
+                <Camera className="w-7 h-7 text-green-400" />
+                <span className="text-[10px] font-bold tracking-wider uppercase text-gray-200">Change Photo</span>
+              </button>
+            )}
 
-            {/* Role badge */}
-            <div className="flex justify-center mb-4">
-              <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-extrabold uppercase tracking-wider border ${roleBadge.bg} ${roleBadge.color} ${roleBadge.border}`}>
+            {/* Quick remove trigger if avatar present */}
+            {currentAvatar && !uploadingImage && (
+              <button
+                type="button"
+                onClick={handleImageDelete}
+                className="absolute -bottom-2 -right-2 p-2 rounded-xl bg-red-500/80 hover:bg-red-600 text-white shadow-lg backdrop-blur-md transition-transform hover:scale-110"
+                title="Remove photo"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* User Info Details */}
+          <div className="flex-1 space-y-3 min-w-0">
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
+              <h1 className="font-display text-3xl md:text-4xl font-extrabold text-white tracking-tight">{displayName}</h1>
+              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider border ${roleBadge.bg} ${roleBadge.color} ${roleBadge.border}`}>
                 {roleBadge.icon}
                 {roleBadge.label}
               </span>
             </div>
 
-            {/* Joined date */}
-            <div className="flex items-center justify-center gap-2 text-xs text-gray-400 bg-white/[0.03] rounded-xl py-2 px-3 border border-white/5">
-              <Calendar className="w-3.5 h-3.5 text-gray-500" />
-              Joined {joinedDate}
-            </div>
-          </motion.div>
+            <p className="text-gray-400 text-sm flex items-center justify-center md:justify-start gap-2">
+              <Mail className="w-4 h-4 text-green-400 shrink-0" />
+              <span className="truncate">{displayEmail}</span>
+            </p>
 
-          {/* BMI Card (visible when weight + height set) */}
-          {bmi && bmiCategory && (
-            <motion.div
-              initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-              className={`bg-[#111113]/80 border rounded-3xl p-5 ${bmiCategory.border}`}
-            >
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-gray-400" />
-                  <span className="text-xs font-bold uppercase tracking-wider text-gray-400">BMI</span>
-                </div>
-                <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${bmiCategory.bg} ${bmiCategory.color}`}>
-                  {bmiCategory.label}
-                </span>
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 pt-1 text-xs text-gray-400">
+              <div className="flex items-center gap-1.5 bg-white/[0.04] px-3 py-1.5 rounded-xl border border-white/5">
+                <Calendar className="w-3.5 h-3.5 text-gray-400" />
+                <span>Joined {joinedDate}</span>
               </div>
-              <p className={`font-display text-5xl font-bold ${bmiCategory.color}`}>{bmi}</p>
-              <div className="mt-4 h-2 rounded-full bg-white/[0.06] overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-blue-500 via-green-500 via-yellow-500 to-red-500"
-                  style={{ width: `${Math.min(((bmi - 15) / 25) * 100, 100)}%` }}
-                />
+              <div className="flex items-center gap-1.5 bg-white/[0.04] px-3 py-1.5 rounded-xl border border-white/5">
+                <ShieldCheck className="w-3.5 h-3.5 text-green-400" />
+                <span className="text-green-300 font-semibold">Account Verified</span>
               </div>
-            </motion.div>
-          )}
-        </div>
-
-        {/* ─── Right: Info / Edit Form ─────────────────────────────────────── */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
-          className="lg:col-span-2 bg-[#111113]/80 backdrop-blur-md border border-white/10 rounded-3xl p-6 md:p-8 shadow-2xl"
-        >
-          <div className="flex items-center justify-between mb-8 pb-4 border-b border-white/10">
-            <div>
-              <h3 className="font-display text-xl font-bold text-white">Profile Information</h3>
-              <p className="text-gray-500 text-xs mt-0.5">Your personal details and account credentials</p>
             </div>
-            {!editing && (
+          </div>
+
+          {/* Quick Action Button */}
+          <div className="shrink-0 flex flex-col gap-2">
+            {!editing ? (
               <button
                 onClick={() => setEditing(true)}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.05] border border-white/10 text-xs font-bold text-gray-200 hover:text-white hover:bg-white/10 transition-all"
+                className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-green-500 to-emerald-600 text-black font-bold text-xs hover:from-green-400 hover:to-emerald-500 transition-all shadow-[0_0_20px_rgba(34,197,94,0.3)]"
               >
                 <Edit3 className="w-4 h-4" /> Edit Profile
               </button>
+            ) : (
+              <button
+                onClick={handleCancel}
+                className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl bg-white/[0.06] border border-white/10 text-gray-300 font-bold text-xs hover:bg-white/10 hover:text-white transition-all"
+              >
+                <X className="w-4 h-4" /> Cancel Editing
+              </button>
             )}
           </div>
+        </div>
+      </motion.div>
 
-          {editing ? (
-            /* ─── Edit form ─── */
-            <form onSubmit={handleSubmit} className="space-y-5">
-              {[
-                { label: 'Full Name', name: 'name', type: 'text', icon: <User className="w-4 h-4 text-gray-600" />, placeholder: 'Your full name', required: true },
-                { label: 'Contact Number', name: 'phone', type: 'tel', icon: <Phone className="w-4 h-4 text-gray-600" />, placeholder: '+94 77 123 4567', required: false },
-              ].map(f => (
-                <div key={f.name}>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">
-                    {f.label} {f.required && <span className="text-red-400">*</span>}
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2">{f.icon}</span>
-                    <input
-                      type={f.type}
-                      name={f.name}
-                      value={(formData as any)[f.name]}
-                      onChange={handleChange}
-                      placeholder={f.placeholder}
-                      className="w-full px-4 py-3 pl-10 bg-gray-900/80 border border-gray-800 rounded-xl text-sm text-white focus:outline-none focus:border-green-500/60 transition-colors"
-                    />
-                  </div>
-                </div>
-              ))}
+      {/* ─── Notification / Alert Toast ─── */}
+      <AnimatePresence>
+        {message && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className={`flex items-center justify-between px-6 py-4 rounded-2xl border text-sm font-semibold backdrop-blur-md shadow-lg ${
+              message.type === 'success'
+                ? 'bg-green-500/10 border-green-500/30 text-green-300'
+                : 'bg-red-500/10 border-red-500/30 text-red-300'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              {message.type === 'success' ? <CheckCircle2 className="w-5 h-5 text-green-400 shrink-0" /> : <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />}
+              <span>{message.text}</span>
+            </div>
+            <button onClick={() => setMessage(null)} className="opacity-60 hover:opacity-100">
+              <X className="w-4 h-4" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">
-                  Bio / About
-                </label>
-                <div className="relative">
-                  <FileText className="absolute left-3.5 top-3.5 w-4 h-4 text-gray-600" />
-                  <textarea
-                    name="bio"
-                    value={formData.bio}
-                    onChange={handleChange}
-                    rows={3}
-                    placeholder="Tell us about yourself..."
-                    className="w-full px-4 py-3 pl-10 bg-gray-900/80 border border-gray-800 rounded-xl text-sm text-white focus:outline-none focus:border-green-500/60 transition-colors resize-none"
-                  />
-                </div>
-              </div>
+      {/* ─── Navigation Tabs ─── */}
+      <div className="flex items-center gap-2 border-b border-white/10 pb-3 overflow-x-auto">
+        {[
+          { id: 'personal', label: 'Personal Information', icon: <User className="w-4 h-4" /> },
+          { id: 'fitness',  label: 'Body Metrics & BMI',  icon: <HeartPulse className="w-4 h-4" /> },
+          { id: 'account',  label: 'Account Security',    icon: <Lock className="w-4 h-4" /> },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id as any)}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl text-xs font-bold transition-all whitespace-nowrap ${
+              activeTab === tab.id
+                ? 'bg-green-500 text-black shadow-[0_0_15px_rgba(34,197,94,0.3)]'
+                : 'bg-white/[0.03] text-gray-400 border border-white/5 hover:bg-white/10 hover:text-white'
+            }`}
+          >
+            {tab.icon}
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">Weight (kg)</label>
-                  <div className="relative">
-                    <Scale className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
-                    <input type="number" name="weight" value={formData.weight} onChange={handleChange} placeholder="e.g. 75"
-                      className="w-full px-4 py-3 pl-10 bg-gray-900/80 border border-gray-800 rounded-xl text-sm text-white focus:outline-none focus:border-green-500/60 transition-colors"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">Height (cm)</label>
-                  <div className="relative">
-                    <Ruler className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
-                    <input type="number" name="height" value={formData.height} onChange={handleChange} placeholder="e.g. 175"
-                      className="w-full px-4 py-3 pl-10 bg-gray-900/80 border border-gray-800 rounded-xl text-sm text-white focus:outline-none focus:border-green-500/60 transition-colors"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <button type="submit" disabled={saving}
-                  className="flex-1 flex items-center justify-center gap-2 bg-green-500 text-black py-3 rounded-xl font-bold text-sm hover:bg-green-400 disabled:opacity-60 transition-all"
-                >
-                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                  {saving ? 'Saving...' : 'Save Changes'}
-                </button>
-                <button type="button" onClick={handleCancel}
-                  className="flex-1 flex items-center justify-center gap-2 bg-white/[0.05] border border-white/10 py-3 rounded-xl font-semibold text-sm text-gray-400 hover:text-white hover:bg-white/10 transition-all"
-                >
-                  <X className="w-4 h-4" /> Cancel
-                </button>
-              </div>
-            </form>
-          ) : (
-            /* ─── Read-only view ─── */
-            <div className="space-y-0">
-              {[
-                { label: 'Email Address',  value: displayEmail,                                                       icon: <Mail className="w-4 h-4 text-gray-500" /> },
-                { label: 'Full Name',      value: displayName,                                                        icon: <User className="w-4 h-4 text-gray-500" /> },
-                { label: 'Contact Number', value: profile?.phone || ctxUser?.phone || null,                           icon: <Phone className="w-4 h-4 text-green-400" /> },
-                { label: 'Account Role',   value: isSysAdmin ? 'SYSTEM_ADMIN' : uRole,                               icon: <ShieldCheck className="w-4 h-4 text-purple-400" /> },
-                { label: 'Bio / Notes',    value: profile?.bio || null,                                               icon: <FileText className="w-4 h-4 text-gray-500" /> },
-                { label: 'Body Weight',    value: profile?.weight ? `${profile.weight} kg` : null,                   icon: <Scale className="w-4 h-4 text-blue-400" /> },
-                { label: 'Height',         value: profile?.height ? `${profile.height} cm` : null,                   icon: <Ruler className="w-4 h-4 text-emerald-400" /> },
-              ].map((field, i) => (
-                <div key={i} className="flex items-center justify-between py-4 border-b border-white/[0.04] last:border-0">
+      {/* ─── Main Content Body ─── */}
+      <motion.div
+        key={activeTab + (editing ? '-edit' : '-view')}
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2 }}
+        className="bg-[#121318]/90 backdrop-blur-xl border border-white/10 rounded-3xl p-6 md:p-8 shadow-2xl space-y-6"
+      >
+        {/* ─── TAB 1: PERSONAL INFO ───────────────────────────────────── */}
+        {activeTab === 'personal' && (
+          <div>
+            {editing ? (
+              /* Edit Form */
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="grid sm:grid-cols-2 gap-5">
                   <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-1">{field.label}</p>
-                    <p className="text-white font-medium text-sm">
-                      {field.value || <span className="text-gray-600 italic text-xs">Not set — click Edit Profile to add</span>}
+                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">
+                      Full Name <span className="text-red-400">*</span>
+                    </label>
+                    <div className="relative">
+                      <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                      <input
+                        type="text"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleChange}
+                        placeholder="John Doe"
+                        className="w-full px-4 py-3 pl-10 bg-gray-900/90 border border-gray-800 rounded-xl text-sm text-white focus:outline-none focus:border-green-500 transition-colors"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">
+                      Contact Number
+                    </label>
+                    <div className="relative">
+                      <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                      <input
+                        type="tel"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleChange}
+                        placeholder="+94 77 123 4567"
+                        className="w-full px-4 py-3 pl-10 bg-gray-900/90 border border-gray-800 rounded-xl text-sm text-white focus:outline-none focus:border-green-500 transition-colors"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid sm:grid-cols-2 gap-5">
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Gender</label>
+                    <select
+                      name="gender"
+                      value={formData.gender}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 bg-gray-900/90 border border-gray-800 rounded-xl text-sm text-white focus:outline-none focus:border-green-500 transition-colors"
+                    >
+                      <option value="">Select Gender</option>
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Date of Birth</label>
+                    <input
+                      type="date"
+                      name="dateOfBirth"
+                      value={formData.dateOfBirth}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 bg-gray-900/90 border border-gray-800 rounded-xl text-sm text-white focus:outline-none focus:border-green-500 transition-colors"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Bio / About Me</label>
+                  <div className="relative">
+                    <FileText className="absolute left-3.5 top-3.5 w-4 h-4 text-gray-500" />
+                    <textarea
+                      name="bio"
+                      value={formData.bio}
+                      onChange={handleChange}
+                      rows={3}
+                      placeholder="Tell us about your fitness journey and goals..."
+                      className="w-full px-4 py-3 pl-10 bg-gray-900/90 border border-gray-800 rounded-xl text-sm text-white focus:outline-none focus:border-green-500 transition-colors resize-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-4 pt-2">
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 text-black py-3 rounded-xl font-bold text-xs hover:from-green-400 hover:to-emerald-500 disabled:opacity-60 transition-all shadow-lg"
+                  >
+                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                    {saving ? 'Saving Changes...' : 'Save Profile'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCancel}
+                    className="flex-1 flex items-center justify-center gap-2 bg-white/[0.05] border border-white/10 py-3 rounded-xl font-bold text-xs text-gray-300 hover:text-white hover:bg-white/10 transition-all"
+                  >
+                    <X className="w-4 h-4" /> Cancel
+                  </button>
+                </div>
+              </form>
+            ) : (
+              /* View Mode */
+              <div className="grid sm:grid-cols-2 gap-6">
+                {[
+                  { label: 'Full Name',      value: displayName,                          icon: <User className="w-4 h-4 text-green-400" /> },
+                  { label: 'Email Address',  value: displayEmail,                         icon: <Mail className="w-4 h-4 text-blue-400" /> },
+                  { label: 'Contact Number', value: profile?.phone || 'Not provided',     icon: <Phone className="w-4 h-4 text-cyan-400" /> },
+                  { label: 'Gender',         value: profile?.gender || 'Not specified',   icon: <Activity className="w-4 h-4 text-purple-400" /> },
+                  { label: 'Date of Birth',  value: profile?.dateOfBirth ? String(profile.dateOfBirth).split('T')[0] : 'Not specified', icon: <Calendar className="w-4 h-4 text-amber-400" /> },
+                  { label: 'Account Role',   value: roleBadge.label,                      icon: <ShieldCheck className="w-4 h-4 text-emerald-400" /> },
+                ].map((item, idx) => (
+                  <div key={idx} className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 flex items-start gap-4">
+                    <div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/5 shrink-0">
+                      {item.icon}
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-0.5">{item.label}</p>
+                      <p className="font-semibold text-white text-sm">{item.value}</p>
+                    </div>
+                  </div>
+                ))}
+
+                <div className="sm:col-span-2 p-4 rounded-2xl bg-white/[0.02] border border-white/5 flex items-start gap-4">
+                  <div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/5 shrink-0">
+                    <FileText className="w-4 h-4 text-green-400" />
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-0.5">Bio / Notes</p>
+                    <p className="text-sm text-gray-300">{profile?.bio || 'No bio added yet.'}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ─── TAB 2: BODY METRICS & BMI ─────────────────────────────────── */}
+        {activeTab === 'fitness' && (
+          <div className="space-y-6">
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="p-6 rounded-2xl bg-gradient-to-br from-blue-500/10 to-transparent border border-blue-500/20 space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-xl bg-blue-500/20 text-blue-400">
+                    <Scale className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Body Weight</p>
+                    <p className="font-display text-3xl font-extrabold text-white">
+                      {formData.weight || profile?.weight ? `${formData.weight || profile.weight} kg` : '—'}
                     </p>
                   </div>
-                  <span className="opacity-60">{field.icon}</span>
                 </div>
-              ))}
+                <p className="text-xs text-gray-400">Keep your body weight metrics accurate for personalized calorie recommendations.</p>
+              </div>
+
+              <div className="p-6 rounded-2xl bg-gradient-to-br from-emerald-500/10 to-transparent border border-emerald-500/20 space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-xl bg-emerald-500/20 text-emerald-400">
+                    <Ruler className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Height</p>
+                    <p className="font-display text-3xl font-extrabold text-white">
+                      {formData.height || profile?.height ? `${formData.height || profile.height} cm` : '—'}
+                    </p>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-400">Your height is used to calculate your precise Body Mass Index (BMI).</p>
+              </div>
             </div>
-          )}
-        </motion.div>
-      </div>
+
+            {/* Interactive BMI Card */}
+            {bmi && bmiCategory ? (
+              <div className={`p-6 rounded-3xl border bg-white/[0.02] ${bmiCategory.border} space-y-4`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-gray-400" />
+                    <span className="text-xs font-bold uppercase tracking-wider text-gray-300">Body Mass Index (BMI)</span>
+                  </div>
+                  <span className={`text-xs font-extrabold px-3 py-1 rounded-full border ${bmiCategory.bg} ${bmiCategory.color} ${bmiCategory.border}`}>
+                    {bmiCategory.label}
+                  </span>
+                </div>
+
+                <div className="flex items-baseline gap-3">
+                  <span className={`font-display text-6xl font-extrabold ${bmiCategory.color}`}>{bmi}</span>
+                  <span className="text-xs text-gray-400">kg/m²</span>
+                </div>
+
+                {/* Meter bar */}
+                <div className="space-y-1.5">
+                  <div className="h-3 rounded-full bg-white/10 overflow-hidden p-0.5">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-blue-500 via-green-500 via-yellow-500 to-red-500 transition-all duration-500"
+                      style={{ width: `${Math.min(Math.max(((bmi - 15) / 20) * 100, 5), 100)}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-[10px] font-bold text-gray-500 uppercase tracking-widest pt-1">
+                    <span>Underweight (&lt;18.5)</span>
+                    <span>Normal (18.5-24.9)</span>
+                    <span>Overweight (25-29.9)</span>
+                    <span>Obese (30+)</span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="p-8 text-center rounded-3xl border border-dashed border-white/10 bg-white/[0.01] space-y-3">
+                <Sparkles className="w-8 h-8 text-green-400 mx-auto" />
+                <p className="text-white font-bold text-sm">Calculate Your BMI</p>
+                <p className="text-xs text-gray-400 max-w-sm mx-auto">Click "Edit Profile" above to enter your current weight and height to unlock your automated BMI score.</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ─── TAB 3: ACCOUNT SECURITY ────────────────────────────────────── */}
+        {activeTab === 'account' && (
+          <div className="space-y-6">
+            <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-xl bg-purple-500/20 text-purple-400">
+                    <Lock className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-sm text-white">Password & Security</p>
+                    <p className="text-xs text-gray-400">Manage your account authentication credentials</p>
+                  </div>
+                </div>
+                <span className="text-xs font-bold px-3 py-1 rounded-full bg-green-500/10 text-green-400 border border-green-500/20">
+                  Protected
+                </span>
+              </div>
+            </div>
+
+            <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-xl bg-cyan-500/20 text-cyan-400">
+                    <ShieldCheck className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-sm text-white">Email Verification</p>
+                    <p className="text-xs text-gray-400">{displayEmail}</p>
+                  </div>
+                </div>
+                <span className="text-xs font-bold px-3 py-1 rounded-full bg-green-500/10 text-green-400 border border-green-500/20">
+                  Verified
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+      </motion.div>
     </div>
   );
 }

@@ -210,7 +210,7 @@ export default function ManageUsers() {
                       >
                         <td className="p-5 pl-8">
                           <div className="flex items-center gap-4">
-                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg shadow-inner ${
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg shadow-inner overflow-hidden shrink-0 ${
                               isSysAdmin
                                 ? 'bg-amber-500/20 text-amber-400 ring-1 ring-amber-500/40'
                                 : isAdmin
@@ -221,7 +221,11 @@ export default function ManageUsers() {
                                       ? 'bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/30'
                                       : 'bg-gray-800 text-gray-400 ring-1 ring-gray-700'
                             }`}>
-                              {(u.name || u.firstName || 'U').charAt(0).toUpperCase()}
+                              {u.profileImage ? (
+                                <img src={u.profileImage} alt={u.name || 'User'} className="w-full h-full object-cover" />
+                              ) : (
+                                (u.name || u.firstName || 'U').charAt(0).toUpperCase()
+                              )}
                             </div>
                             <div className="flex flex-col">
                               <span className="font-bold text-gray-200 text-sm flex items-center gap-2">

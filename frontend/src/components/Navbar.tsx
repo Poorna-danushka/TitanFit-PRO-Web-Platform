@@ -248,7 +248,7 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
               </p>
             </div>
             <div
-              className="w-10 h-10 rounded-full flex items-center justify-center text-black font-black text-sm shrink-0"
+              className="w-10 h-10 rounded-full flex items-center justify-center text-black font-black text-sm shrink-0 overflow-hidden"
               style={{
                 background: isAdmin
                   ? 'linear-gradient(135deg, #a855f7, #7c3aed)'
@@ -258,7 +258,11 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
                   : '0 0 20px rgba(34,197,94,0.4)',
               }}
             >
-              {user?.name?.charAt(0).toUpperCase() || 'U'}
+              {user?.profileImage ? (
+                <img src={user.profileImage} alt={user?.name || 'User'} className="w-full h-full object-cover" />
+              ) : (
+                user?.name?.charAt(0).toUpperCase() || 'U'
+              )}
             </div>
           </button>
 
