@@ -24,6 +24,8 @@ import ManageUsers from './pages/admin/ManageUsers';
 import ManagePurchases from './pages/admin/ManagePurchases';
 import ManageNotifications from './pages/admin/ManageNotifications';
 
+import ForceChangePassword from './pages/ForceChangePassword';
+
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 import AnyUserRoute from './components/AnyUserRoute';
@@ -34,7 +36,9 @@ import AdminLayout from './components/AdminLayout';
 import Notifications from './components/Notifications';
 
 // ─── Role-based dashboard redirect helper ─────────────────────────────────────
-function getDashboardPathForRole(role?: string, isSystemAdmin?: boolean): string {
+function getDashboardPathForRole(role?: string, isSystemAdmin?: boolean, mustChangePassword?: boolean): string {
+  if (mustChangePassword) return '/force-change-password';
+
   const normalized = (role || 'MEMBER').toUpperCase();
   if (normalized === 'SYSTEM_ADMIN' || isSystemAdmin) return '/admin/dashboard';
   if (normalized === 'ADMIN') return '/admin/dashboard';
@@ -47,21 +51,31 @@ function RootRedirect() {
   const { user, loading } = useAuth();
   if (loading) return null;
   if (!user) return <Home />;
-  return <Navigate to={getDashboardPathForRole(user.role, user.isSystemAdmin)} replace />;
+  return <Navigate to={getDashboardPathForRole(user.role, user.isSystemAdmin, user.mustChangePassword)} replace />;
 }
 
 function LoginRedirect() {
   const { user, loading } = useAuth();
   if (loading) return null;
-  if (user) return <Navigate to={getDashboardPathForRole(user.role, user.isSystemAdmin)} replace />;
+  if (user) return <Navigate to={getDashboardPathForRole(user.role, user.isSystemAdmin, user.mustChangePassword)} replace />;
   return <Login />;
 }
 
 function RegisterRedirect() {
   const { user, loading } = useAuth();
   if (loading) return null;
-  if (user) return <Navigate to={getDashboardPathForRole(user.role, user.isSystemAdmin)} replace />;
+  if (user) return <Navigate to={getDashboardPathForRole(user.role, user.isSystemAdmin, user.mustChangePassword)} replace />;
   return <Register />;
+}
+
+function ForceChangePasswordRoute() {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  if (!user) return <Navigate to="/login" replace />;
+  if (!user.mustChangePassword) {
+    return <Navigate to={getDashboardPathForRole(user.role, user.isSystemAdmin, false)} replace />;
+  }
+  return <ForceChangePassword />;
 }
 
 function App() {
@@ -74,6 +88,7 @@ function App() {
           <Route path="/" element={<RootRedirect />} />
           <Route path="/login" element={<LoginRedirect />} />
           <Route path="/register" element={<RegisterRedirect />} />
+          <Route path="/force-change-password" element={<ForceChangePasswordRoute />} />
 
           {/* ─── Universal routes: accessible by ANY authenticated user (any role) ─── */}
           {/* Profile & Notifications work for Members, Staff, Trainers, Admin, System Admin */}

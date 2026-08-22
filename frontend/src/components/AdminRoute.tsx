@@ -6,6 +6,9 @@ const AdminRoute = () => {
 
   if (loading) return <LoadingScreen />;
   if (!user) return <Navigate to="/login" replace />;
+  if (user.mustChangePassword) {
+    return <Navigate to="/force-change-password" replace />;
+  }
 
   const uRole = (user.role || '').toUpperCase();
   const isAdmin = ['ADMIN', 'SYSTEM_ADMIN', 'STAFF'].includes(uRole) || Boolean((user as any)?.isSystemAdmin);

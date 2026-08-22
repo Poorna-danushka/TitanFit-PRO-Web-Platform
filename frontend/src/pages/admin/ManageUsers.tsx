@@ -14,9 +14,9 @@ export default function ManageUsers() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'MEMBER' | 'STAFF' | 'TRAINER' | 'ADMIN'>('MEMBER');
+  const [role, setRole] = useState<'MEMBER' | 'STAFF' | 'TRAINER' | 'ADMIN'>('STAFF');
   const [creating, setCreating] = useState(false);
+  const [createdResult, setCreatedResult] = useState<{ name: string; email: string; role: string; tempPassword?: string; emailSent?: boolean } | null>(null);
 
   const { user: currentUser } = useAuth();
   const isSystemAdmin = currentUser?.role === 'SYSTEM_ADMIN' || (currentUser as any)?.isSystemAdmin;
@@ -49,16 +49,27 @@ export default function ManageUsers() {
         name,
         email,
         phone,
-        password: password || 'DefaultPass@123',
         role,
       });
-      toast.success(res.data.message || 'User created successfully!');
+
+      const data = res.data;
+      toast.success(data.message || 'User created successfully!');
       setIsCreateModalOpen(false);
+
+      if (data.tempPassword || data.emailSent) {
+        setCreatedResult({
+          name,
+          email,
+          role,
+          tempPassword: data.tempPassword,
+          emailSent: data.emailSent,
+        });
+      }
+
       setName('');
       setEmail('');
       setPhone('');
-      setPassword('');
-      setRole('MEMBER');
+      setRole('STAFF');
       fetchUsers();
     } catch (err: any) {
       toast.error(err?.response?.data?.message || err?.message || 'Failed to create user.');
@@ -359,12 +370,7 @@ export default function ManageUsers() {
 
                 <div>
                   <label className="block text-xs font-semibold text-gray-400 mb-1">Contact Number</label>
-                  <input type="tel" required value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="e.g. +94 77 123 4567" className="w-full px-4 py-3 bg-gray-900 border border-gray-800 rounded-xl text-xs text-white focus:outline-none focus:border-green-500" />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-gray-400 mb-1">Password</label>
-                  <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="DefaultPass@123" className="w-full px-4 py-3 bg-gray-900 border border-gray-800 rounded-xl text-xs text-white focus:outline-none focus:border-green-500" />
+                  <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="e.g. +94 77 123 4567" className="w-full px-4 py-3 bg-gray-900 border border-gray-800 rounded-xl text-xs text-white focus:outline-none focus:border-green-500" />
                 </div>
 
                 <div>
@@ -374,9 +380,9 @@ export default function ManageUsers() {
                     onChange={(e) => setRole(e.target.value as any)}
                     className="w-full px-4 py-3 bg-gray-900 border border-gray-800 rounded-xl text-xs text-white focus:outline-none focus:border-green-500"
                   >
-                    <option value="MEMBER">Member (Gym User)</option>
-                    <option value="STAFF">Staff (Reception Desk)</option>
+                    <option value="STAFF">Staff / Reception Desk</option>
                     <option value="TRAINER">Personal Trainer</option>
+                    <option value="MEMBER">Member (Gym User)</option>
                     {isSystemAdmin ? (
                       <option value="ADMIN">Admin (System Manager)</option>
                     ) : (
@@ -390,14 +396,99 @@ export default function ManageUsers() {
                   )}
                 </div>
 
-                <button type="submit" disabled={creating} className="w-full py-3.5 bg-green-500 text-black font-bold text-xs rounded-xl hover:bg-green-400 transition-all disabled:opacity-50">
-                  {creating ? 'Creating...' : 'Create Account'}
+                {/* Automated Security & Credentials Notice */}
+                <div className="p-3.5 bg-green-500/10 border border-green-500/20 rounded-xl text-xs text-green-300 space-y-1">
+                  <div className="flex items-center gap-2 font-bold text-green-400">
+                    <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
+                    <span>Automated Security & Email Delivery</span>
+                  </div>
+                  <p className="text-gray-300 text-[11px] leading-relaxed">
+                    A secure temporary password will be automatically generated and sent to this email. The user will be required to set their own permanent password on their first login.
+                  </p>
+                </div>
+
+                <button type="submit" disabled={creating} className="w-full py-3.5 bg-green-500 text-black font-bold text-xs rounded-xl hover:bg-green-400 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+                  {creating ? 'Creating & Sending Email...' : 'Create Account & Send Welcome Email'}
                 </button>
               </form>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
+
+      {/* ACCOUNT CREATION SUCCESS & CREDENTIALS MODAL */}
+      <AnimatePresence>
+        {createdResult && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setCreatedResult(null)} className="absolute inset-0 bg-black/85 backdrop-blur-md" />
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative bg-[#111113] border border-green-500/30 rounded-3xl w-full max-w-md p-6 shadow-2xl space-y-5">
+              <div className="flex justify-between items-center pb-3 border-b border-gray-800">
+                <div className="flex items-center gap-2 text-green-400 font-bold">
+                  <CheckCircle className="w-5 h-5" />
+                  <h3 className="text-lg text-white">Account Created Successfully</h3>
+                </div>
+                <button onClick={() => setCreatedResult(null)} className="text-gray-400 hover:text-white"><X className="w-5 h-5" /></button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="p-4 bg-white/[0.02] border border-white/10 rounded-2xl space-y-2 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">User:</span>
+                    <span className="text-white font-bold">{createdResult.name}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Email:</span>
+                    <span className="text-blue-400 font-mono">{createdResult.email}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Role:</span>
+                    <span className="text-purple-400 font-bold">{createdResult.role}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Welcome Email:</span>
+                    <span className={createdResult.emailSent ? 'text-green-400 font-bold' : 'text-amber-400'}>
+                      {createdResult.emailSent ? 'Sent to recipient ✅' : 'Simulated (logged to console)'}
+                    </span>
+                  </div>
+                </div>
+
+                {createdResult.tempPassword && (
+                  <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl space-y-2">
+                    <span className="text-[10px] uppercase font-bold text-amber-400 tracking-wider block">
+                      Generated Temporary Password
+                    </span>
+                    <div className="flex items-center justify-between bg-black/60 px-3.5 py-2.5 rounded-xl border border-amber-500/30">
+                      <span className="font-mono text-base font-bold text-amber-300 tracking-wider">
+                        {createdResult.tempPassword}
+                      </span>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(createdResult.tempPassword!);
+                          toast.success('Temporary password copied to clipboard!');
+                        }}
+                        className="px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-semibold rounded-lg transition-all"
+                      >
+                        Copy
+                      </button>
+                    </div>
+                    <p className="text-[11px] text-gray-400">
+                      The user will be prompted to set a new permanent password on their first login.
+                    </p>
+                  </div>
+                )}
+
+                <button
+                  onClick={() => setCreatedResult(null)}
+                  className="w-full py-3 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl transition-all"
+                >
+                  Done
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
 
       {/* DELETE CONFIRMATION MODAL */}
       <AnimatePresence>

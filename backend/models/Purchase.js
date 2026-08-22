@@ -25,9 +25,16 @@ const purchaseSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['pending', 'paid'],
+      enum: ['pending', 'pending_approval', 'paid', 'rejected'],
       default: 'paid',
     },
+    paymentMethod: {
+      type: String,
+      enum: ['card', 'bank_transfer', 'stripe', 'paypal'],
+      default: 'card',
+    },
+    bankTransferReference: String,
+    transferSlipUrl: String,
     purchaseDate: {
       type: Date,
       default: Date.now,

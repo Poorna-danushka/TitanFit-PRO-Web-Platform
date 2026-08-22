@@ -34,22 +34,47 @@ export const getExerciseById = async (req, res) => {
 // Create exercise (admin only)
 export const createExercise = async (req, res) => {
   try {
-    const { name, muscleGroup, description, image, beginnerReps, intermediateReps, advancedReps, steps } = req.body;
-
-    if (!name || !muscleGroup || !description || !image || !beginnerReps || !intermediateReps || !advancedReps || !steps) {
-      console.error('Missing fields in createExercise:', req.body);
-      return res.status(400).json({ message: 'Please provide all required fields', received: req.body });
-    }
-
-    const exercise = new Exercise({
+    const {
       name,
-      muscleGroup,
+      muscleGroup,    // singular from older frontend forms
+      muscleGroups,   // plural from newer frontend forms
       description,
       image,
       beginnerReps,
       intermediateReps,
       advancedReps,
       steps,
+      difficulty,
+      equipment,
+      instructions,
+      caloriesPer10Min,
+    } = req.body;
+
+    // Normalize: accept muscleGroup (string) or muscleGroups (array)
+    const normalizedMuscleGroups =
+      (Array.isArray(muscleGroups) && muscleGroups.length > 0)
+        ? muscleGroups
+        : muscleGroup
+          ? [muscleGroup]
+          : [];
+
+    if (!name || normalizedMuscleGroups.length === 0) {
+      return res.status(400).json({ message: 'Please provide name and at least one muscle group.', received: req.body });
+    }
+
+    const exercise = new Exercise({
+      name,
+      muscleGroups: normalizedMuscleGroups,
+      description:       description       || '',
+      image:             image             || '',
+      beginnerReps:      beginnerReps      || '',
+      intermediateReps:  intermediateReps  || '',
+      advancedReps:      advancedReps      || '',
+      steps:             Array.isArray(steps) ? steps : steps ? [steps] : [],
+      difficulty:        difficulty        || 'INTERMEDIATE',
+      equipment:         Array.isArray(equipment) ? equipment : equipment ? [equipment] : [],
+      instructions:      Array.isArray(instructions) ? instructions : instructions ? [instructions] : [],
+      caloriesPer10Min:  caloriesPer10Min  || 50,
     });
 
     await exercise.save();

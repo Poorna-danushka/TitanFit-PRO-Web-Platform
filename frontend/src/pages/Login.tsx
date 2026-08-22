@@ -83,7 +83,12 @@ export default function Login() {
       login(response.data.tokens.accessToken, userData, response.data.tokens.refreshToken);
       const uRole = (userData.role || '').toUpperCase();
       const isAdminLike = ['ADMIN', 'SYSTEM_ADMIN'].includes(uRole) || Boolean(userData?.isSystemAdmin);
-      navigate(isAdminLike ? '/admin/dashboard' : uRole === 'STAFF' ? '/staff/dashboard' : uRole === 'TRAINER' ? '/trainer/dashboard' : '/dashboard');
+
+      if (userData.mustChangePassword) {
+        navigate('/force-change-password', { replace: true });
+      } else {
+        navigate(isAdminLike ? '/admin/dashboard' : uRole === 'STAFF' ? '/staff/dashboard' : uRole === 'TRAINER' ? '/trainer/dashboard' : '/dashboard', { replace: true });
+      }
     } catch (err: any) {
       setError(err.safeMessage || 'Invalid email or password');
     } finally {

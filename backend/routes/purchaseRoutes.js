@@ -2,8 +2,10 @@ import express from 'express';
 import {
   getAllPurchases,
   getMyPurchases,
-  createPurchase,
-  createPurchaseWithPayment,
+  createCardPurchase,
+  createBankTransferPurchase,
+  approveBankTransfer,
+  rejectBankTransfer,
   updatePurchaseStatus,
 } from '../controllers/purchaseController.js';
 import authMiddleware from '../middleware/auth.js';
@@ -13,8 +15,12 @@ const router = express.Router();
 
 router.get('/', authMiddleware, isAdmin, getAllPurchases);
 router.get('/my-purchases', authMiddleware, getMyPurchases);
-router.post('/', authMiddleware, createPurchase);
-router.post('/payment', authMiddleware, createPurchaseWithPayment);
+router.post('/card', authMiddleware, createCardPurchase);
+router.post('/bank-transfer', authMiddleware, createBankTransferPurchase);
+router.post('/', authMiddleware, createCardPurchase);
+
+router.put('/:id/approve-bank-transfer', authMiddleware, isAdmin, approveBankTransfer);
+router.put('/:id/reject-bank-transfer', authMiddleware, isAdmin, rejectBankTransfer);
 router.put('/:id/status', authMiddleware, isAdmin, updatePurchaseStatus);
 
 export default router;

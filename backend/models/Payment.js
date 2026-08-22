@@ -1,5 +1,4 @@
 import mongoose from 'mongoose';
-import { PAYMENT_STATUS } from '../constants/index.js';
 
 const paymentSchema = new mongoose.Schema(
   {
@@ -18,7 +17,7 @@ const paymentSchema = new mongoose.Schema(
     },
     currency: {
       type: String,
-      default: 'USD',
+      default: 'LKR',
     },
     stripePaymentId: {
       type: String,
@@ -30,19 +29,26 @@ const paymentSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: Object.values(PAYMENT_STATUS),
-      default: PAYMENT_STATUS.PENDING,
+      enum: ['pending', 'completed', 'failed', 'refunded', 'pending_approval', 'rejected'],
+      default: 'pending',
     },
     paymentMethod: {
       type: String,
-      enum: ['card', 'stripe', 'paypal'],
-      default: 'stripe',
+      enum: ['card', 'bank_transfer', 'stripe', 'paypal'],
+      default: 'card',
     },
+    bankTransferReference: {
+      type: String,
+    },
+    transferSlipUrl: {
+      type: String,
+    },
+    approvedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
+    approvedAt: Date,
     description: String,
-    metadata: {
-      type: Map,
-      of: String,
-    },
     failureReason: String,
     refundedAt: Date,
     refundAmount: Number,
@@ -50,7 +56,6 @@ const paymentSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Indexes
 paymentSchema.index({ userId: 1 });
 paymentSchema.index({ status: 1 });
 paymentSchema.index({ createdAt: -1 });

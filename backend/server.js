@@ -1,9 +1,14 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
-import dotenv from 'dotenv';
-dotenv.config();
+import cookieParser from 'cookie-parser';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 import connectDB from './config/db.js';
 import logger from './utils/logger.js';
@@ -11,6 +16,7 @@ import { initializeEmailService } from './utils/email.js';
 
 // Import middleware
 import { corsMiddleware } from './middleware/cors.js';
+import { csrfMiddleware } from './middleware/csrf.js';
 import { apiLimiter, authLimiter } from './middleware/rateLimiter.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 
@@ -24,20 +30,31 @@ import completedExerciseRoutes from './routes/completedExerciseRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import workoutRoutes from './routes/workoutRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
+import memberRoutes from './routes/memberRoutes.js';
+import membershipRoutes from './routes/membershipRoutes.js';
+import trainerRoutes from './routes/trainerRoutes.js';
+import personalTrainingRoutes from './routes/personalTrainingRoutes.js';
+import attendanceRoutes from './routes/attendanceRoutes.js';
+import aiRoutes from './routes/aiRoutes.js';
+import chatRoutes from './routes/chatRoutes.js';
+import adminRoutes from './routes/adminRoutes.js';
 
 const app = express();
 
-// ============ Security Middleware ============
-app.use(helmet());
+// ============ Security & Cookie Middleware ============
+app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 app.use(corsMiddleware);
+app.use(cookieParser());
 app.use(compression());
 
 // ============ Body Parser Middleware ============
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// ============ Rate Limiting ============
+
+// ============ CSRF & Rate Limiting ============
 app.use('/api/', apiLimiter);
+app.use('/api/', csrfMiddleware);
 
 // ============ Logging Middleware ============
 app.use((req, res, next) => {
@@ -48,7 +65,7 @@ app.use((req, res, next) => {
 // ============ Health Check ============
 app.get('/', (req, res) => {
   res.json({ 
-    message: 'GymFit Pro API running', 
+    message: 'TitanFit Pro API running', 
     version: process.env.API_VERSION || '1.0.0',
     environment: process.env.NODE_ENV 
   });
@@ -74,6 +91,14 @@ app.use(`${apiPrefix}/completed-exercises`, completedExerciseRoutes);
 app.use(`${apiPrefix}/users`, userRoutes);
 app.use(`${apiPrefix}/workouts`, workoutRoutes);
 app.use(`${apiPrefix}/notifications`, notificationRoutes);
+app.use(`${apiPrefix}/members`, memberRoutes);
+app.use(`${apiPrefix}/memberships`, membershipRoutes);
+app.use(`${apiPrefix}/trainers`, trainerRoutes);
+app.use(`${apiPrefix}/personal-training`, personalTrainingRoutes);
+app.use(`${apiPrefix}/attendance`, attendanceRoutes);
+app.use(`${apiPrefix}/ai`, aiRoutes);
+app.use(`${apiPrefix}/chat`, chatRoutes);
+app.use(`${apiPrefix}/admin`, adminRoutes);
 
 // ============ Error Handling ============
 app.use(notFoundHandler);
@@ -104,7 +129,10 @@ const startServer = async () => {
       logger.info(`  - Payments: POST ${apiPrefix}/payments/intent, /payments/subscribe`);
       logger.info(`  - Exercises: GET ${apiPrefix}/exercises`);
       logger.info(`  - Packages: GET/POST ${apiPrefix}/packages`);
-      logger.info(`  - Users: GET/PUT ${apiPrefix}/users/me`);
+      logger.info(`  - Memberships: GET ${apiPrefix}/memberships/plans`);
+      logger.info(`  - Trainers: GET ${apiPrefix}/trainers`);
+      logger.info(`  - AI Assistant: POST ${apiPrefix}/ai/chat`);
+      logger.info(`  - Admin: GET ${apiPrefix}/admin/dashboard`);
       logger.info(`  - Health: GET /api/health`);
     });
   } catch (error) {

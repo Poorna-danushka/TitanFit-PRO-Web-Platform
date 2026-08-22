@@ -62,7 +62,7 @@ export const updateWorkout = async (req, res) => {
     }
     
     // Check if user owns the workout (or is admin, which we'll assume is handled elsewhere or not strictly enforced here)
-    if (workout.userId.toString() !== req.userId && req.userRole !== 'admin') {
+    if (workout.userId.toString() !== req.userId && !['ADMIN', 'SYSTEM_ADMIN'].includes(req.userRole)) {
       return res.status(403).json({ message: 'Not authorized to update this workout' });
     }
 
@@ -86,7 +86,7 @@ export const deleteWorkout = async (req, res) => {
       return res.status(404).json({ message: 'Workout not found' });
     }
 
-    if (workout.userId.toString() !== req.userId && req.userRole !== 'admin') {
+    if (workout.userId.toString() !== req.userId && !['ADMIN', 'SYSTEM_ADMIN'].includes(req.userRole)) {
       return res.status(403).json({ message: 'Not authorized to delete this workout' });
     }
 

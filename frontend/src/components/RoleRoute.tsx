@@ -20,6 +20,10 @@ export default function RoleRoute({ allowedRoles }: RoleRouteProps) {
     return <Navigate to="/login" replace />;
   }
 
+  if (user.mustChangePassword) {
+    return <Navigate to="/force-change-password" replace />;
+  }
+
   const normalizedUserRole = (user.role || 'MEMBER').toUpperCase();
   const normalizedAllowed = allowedRoles.map(r => r.toUpperCase());
 

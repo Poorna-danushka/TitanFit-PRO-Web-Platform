@@ -30,7 +30,8 @@ export interface User {
   /** Alias: same as profileImage (Cloudinary secure_url) */
   avatarUrl?: string | null;
   /** Alias: same as profileImagePublicId */
-  avatarPublicId?: string | null;
+  /** True if the user was created by an admin with a temp password and must change it on first login */
+  mustChangePassword?: boolean;
   weight?: number;
   height?: number;
   isEmailVerified?: boolean;

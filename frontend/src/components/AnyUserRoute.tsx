@@ -21,6 +21,9 @@ const AnyUserRoute = () => {
   }
 
   if (!user) return <Navigate to="/login" replace />;
+  if (user.mustChangePassword) {
+    return <Navigate to="/force-change-password" replace />;
+  }
 
   return <Outlet />;
 };

@@ -51,7 +51,32 @@ const enrichPackageWithExercises = async (pkg) => {
  */
 export const getAllPackages = async (req, res) => {
   try {
-    const packages = await Package.find({ isActive: true }).sort({ createdAt: -1 });
+    let packages = await Package.find({ isActive: true }).sort({ createdAt: -1 });
+
+    if (packages.length === 0) {
+      const MembershipPlan = (await import('../models/MembershipPlan.js')).default;
+      const plans = await MembershipPlan.find({ isActive: true }).sort({ price: 1 });
+
+      packages = plans.map(p => ({
+        _id: p._id,
+        name: p.name,
+        description: p.description || `${p.name} Gym Membership Plan`,
+        price: p.price,
+        currency: p.currency || 'LKR',
+        duration: p.durationMonths ? `${p.durationMonths} Month${p.durationMonths > 1 ? 's' : ''}` : '1 Month',
+        benefits: p.features || ['Gym Access', 'Locker Room', 'AI Coach Access'],
+        features: p.features || ['Gym Access', 'Locker Room', 'AI Coach Access'],
+        exercises: [],
+        isActive: p.isActive,
+      }));
+
+      return res.status(200).json({
+        success: true,
+        count: packages.length,
+        packages,
+        data: packages,
+      });
+    }
 
     const enrichedPackages = await Promise.all(packages.map(enrichPackageWithExercises));
 
@@ -59,14 +84,11 @@ export const getAllPackages = async (req, res) => {
       success: true,
       count: enrichedPackages.length,
       packages: enrichedPackages,
+      data: enrichedPackages,
     });
   } catch (error) {
     logger.error(`Error fetching packages: ${error.message}`);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching packages',
-      error: error.message,
-    });
+    res.status(500).json({ message: 'Error fetching packages', error: error.message });
   }
 };
 
@@ -551,18 +573,20 @@ export const getPackageExercises = async (req, res) => {
       .populate('exerciseId')
       .sort({ order: 1 });
 
-    const enrichedExercises = exercises.map(pe => ({
-      ...pe.exerciseId.toObject(),
-      packageConfig: {
-        reps: pe.reps,
-        sets: pe.sets,
-        restTime: pe.restTime,
-        duration: pe.duration,
-        difficulty: pe.difficulty,
-        notes: pe.notes,
-        order: pe.order,
-      },
-    }));
+    const enrichedExercises = exercises
+      .filter(pe => pe.exerciseId)  // guard: skip if referenced exercise was deleted
+      .map(pe => ({
+        ...pe.exerciseId.toObject(),
+        packageConfig: {
+          reps:       pe.reps,
+          sets:       pe.sets,
+          restTime:   pe.restTime,
+          duration:   pe.duration,
+          difficulty: pe.difficulty,
+          notes:      pe.notes,
+          order:      pe.order,
+        },
+      }));
 
     res.status(200).json({
       success: true,

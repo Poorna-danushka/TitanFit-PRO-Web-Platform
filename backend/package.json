@@ -7,7 +7,10 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "seed": "node seed/seedExercises.js"
+    "seed": "node seed/seedData.js",
+    "seed:exercises": "node seed/seedExercises.js",
+    "seed:db": "node seed/seedDatabase.js",
+    "seed:all": "npm run seed:db"
   },
   "keywords": [
     "gym",
@@ -17,7 +20,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "axios": "^1.6.0",
     "bcryptjs": "^2.4.3",
+    "cloudinary": "^1.41.3",
+    "compression": "^1.7.4",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
@@ -28,13 +35,14 @@
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^7.2.0",
     "mongoose": "^8.0.0",
+    "multer": "^2.2.0",
+    "multer-storage-cloudinary": "^4.0.0",
     "nodemailer": "^6.9.7",
     "password-validator": "^5.3.0",
-    "speakeasy": "^2.0.0",
     "qrcode": "^1.5.3",
+    "speakeasy": "^2.0.0",
     "stripe": "^14.0.0",
-    "winston": "^3.11.0",
-    "compression": "^1.7.4"
+    "winston": "^3.11.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"

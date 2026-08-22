@@ -6,48 +6,40 @@ const exerciseSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Please provide exercise name'],
       trim: true,
-    },
-    muscleGroup: {
-      type: String,
-      required: [true, 'Please provide muscle group'],
+      unique: true,
     },
     description: {
       type: String,
       required: [true, 'Please provide description'],
     },
-    image: {
-      type: String,
-      required: [true, 'Please provide image URL'],
-    },
-    beginnerReps: {
-      type: String,
-      required: [true, 'Please provide beginner reps'],
-    },
-    intermediateReps: {
-      type: String,
-      required: [true, 'Please provide intermediate reps'],
-    },
-    advancedReps: {
-      type: String,
-      required: [true, 'Please provide advanced reps'],
-    },
-    steps: {
+    muscleGroups: {
       type: [String],
-      required: [true, 'Please provide steps'],
+      required: [true, 'Please provide muscle groups'],
     },
-    // Baseline calories burned per 10 minutes at moderate intensity.
-    // The Workout pre-save hook scales this up/down by difficulty multiplier.
+    difficulty: {
+      type: String,
+      enum: ['BEGINNER', 'INTERMEDIATE', 'ADVANCED'],
+      default: 'INTERMEDIATE',
+    },
+    equipment: [String],
+    image: { type: String },
+    videoUrl: { type: String },
+    instructions: [String],
     caloriesPer10Min: {
       type: Number,
       default: 50,
       min: 1,
     },
-    createdAt: {
-      type: Date,
-      default: Date.now,
-    },
+    beginnerReps: { type: String },
+    intermediateReps: { type: String },
+    advancedReps: { type: String },
+    steps: [String],
   },
   { timestamps: true }
 );
+
+exerciseSchema.index({ muscleGroups: 1 });
+exerciseSchema.index({ difficulty: 1 });
+exerciseSchema.index({ name: 'text' });
 
 export default mongoose.model('Exercise', exerciseSchema);
