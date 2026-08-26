@@ -109,7 +109,8 @@ export const register = asyncHandler(async (req, res) => {
   const csrfToken = setAuthCookies(res, accessToken, refreshToken);
 
   try {
-    const verificationLink = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
+    const frontendBaseUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/+$/, '');
+    const verificationLink = `${frontendBaseUrl}/verify-email?token=${verificationToken}`;
     await sendVerificationEmail(normalizedEmail, verificationLink);
   } catch (error) {
     logger.warn(`Failed to send verification email to ${normalizedEmail}: ${error.message}`);
@@ -462,7 +463,8 @@ export const resendVerificationEmail = asyncHandler(async (req, res) => {
     await user.save();
 
     try {
-      const verificationLink = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
+      const frontendBaseUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/+$/, '');
+      const verificationLink = `${frontendBaseUrl}/verify-email?token=${verificationToken}`;
       await sendVerificationEmail(email, verificationLink);
     } catch (error) {
       logger.warn(`Failed to send verification email to ${email}: ${error.message}`);

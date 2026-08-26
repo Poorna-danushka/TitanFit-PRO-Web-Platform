@@ -158,6 +158,11 @@ export const sendWelcomeEmail = async (email, name) => {
   }
 };
 
+const getFrontendUrl = () => {
+  const url = process.env.FRONTEND_URL || 'http://localhost:3000';
+  return url.replace(/\/+$/, '');
+};
+
 /**
  * Send welcome email to admin-created staff/trainer/admin accounts.
  * Includes temporary password and forced change instructions.
@@ -178,9 +183,7 @@ export const sendStaffWelcomeEmail = async (email, name, tempPassword, role, cre
     SYSTEM_ADMIN: 'System Administrator',
   }[role?.toUpperCase()] || role;
 
-  const loginUrl = process.env.FRONTEND_URL
-    ? `${process.env.FRONTEND_URL}/login`
-    : 'http://localhost:3000/login';
+  const loginUrl = `${getFrontendUrl()}/login`;
 
   const mailOptions = {
     from: process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@gymfitpro.local',
@@ -299,9 +302,7 @@ export const sendPlanExpirationEmail = async (email, name, membershipDetails, av
     ? new Date(membershipDetails.endDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
     : 'Upcoming Days';
 
-  const packagesUrl = process.env.FRONTEND_URL
-    ? `${process.env.FRONTEND_URL}/packages`
-    : 'http://localhost:3000/packages';
+  const packagesUrl = `${getFrontendUrl()}/packages`;
 
   // Build HTML table/list of available packages
   const packagesHtml = availablePackages.length > 0
@@ -424,9 +425,7 @@ export const sendPlanExpirationEmail = async (email, name, membershipDetails, av
 export const sendForgotPasswordOtpEmail = async (email, name, tempPassword) => {
   if (!transporter) initializeEmailService();
 
-  const loginUrl = process.env.FRONTEND_URL
-    ? `${process.env.FRONTEND_URL}/login`
-    : 'http://localhost:3000/login';
+  const loginUrl = `${getFrontendUrl()}/login`;
 
   const mailOptions = {
     from: process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@gymfitpro.local',
