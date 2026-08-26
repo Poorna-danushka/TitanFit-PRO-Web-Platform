@@ -10,6 +10,7 @@ import {
   updateUserRole,
   deactivateUser,
   activateUser,
+  triggerExpirationNotifications,
 } from '../controllers/adminController.js';
 
 const router = express.Router();
@@ -30,5 +31,8 @@ router.get('/users', getUserManagement);
 router.put('/users/:userId/role', updateUserRole);
 router.put('/users/:userId/deactivate', deactivateUser);
 router.put('/users/:userId/activate', activateUser);
+
+// Manual Trigger for Plan Expiration Notifications & Recommendation Check
+router.post('/trigger-expiration-notifications', triggerExpirationNotifications);
 
 export default router;

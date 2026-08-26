@@ -291,3 +291,18 @@ export const activateUser = asyncHandler(async (req, res) => {
     data: user,
   });
 });
+
+/**
+ * Trigger plan expiration email notifications & package recommendation check manually
+ * POST /api/v1/admin/trigger-expiration-notifications
+ */
+export const triggerExpirationNotifications = asyncHandler(async (req, res) => {
+  const { checkAndNotifyExpiringMemberships } = await import('../services/planExpirationScheduler.js');
+  const result = await checkAndNotifyExpiringMemberships();
+
+  res.status(HTTP_STATUS.OK).json({
+    success: true,
+    message: 'Plan expiration notification check executed successfully.',
+    data: result,
+  });
+});
