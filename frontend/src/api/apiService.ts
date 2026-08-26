@@ -11,7 +11,8 @@ function getCookie(name: string): string | null {
 
 // ─── Axios instance ───────────────────────────────────────────────────────────
 
-const API_BASE_URL = '/api';
+const rawBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+const API_BASE_URL = rawBaseUrl.replace(/\/+$/, '');
 
 const api = axios.create({
   baseURL: API_BASE_URL,

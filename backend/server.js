@@ -78,23 +78,25 @@ app.get('/api/health', (req, res) => {
 });
 
 // ============ API Routes ============
-const apiPrefix = process.env.API_PREFIX || '/api/v1';
+const prefixes = Array.from(new Set([process.env.API_PREFIX || '/api/v1', '/api/v1', '/api']));
 
-app.use(`${apiPrefix}/auth`, authLimiter, authRoutes);
-app.use(`${apiPrefix}/packages`, packageRoutes);
-app.use(`${apiPrefix}/purchases`, purchaseRoutes);
-app.use(`${apiPrefix}/payments`, paymentRoutes);
-app.use(`${apiPrefix}/users`, userRoutes);
-app.use(`${apiPrefix}/notifications`, notificationRoutes);
-app.use(`${apiPrefix}/members`, memberRoutes);
-app.use(`${apiPrefix}/memberships`, membershipRoutes);
-app.use(`${apiPrefix}/trainers`, trainerRoutes);
-app.use(`${apiPrefix}/personal-training`, personalTrainingRoutes);
-app.use(`${apiPrefix}/attendance`, attendanceRoutes);
-app.use(`${apiPrefix}/ai`, aiRoutes);
-app.use(`${apiPrefix}/chat`, chatRoutes);
-app.use(`${apiPrefix}/admin`, adminRoutes);
-app.use(`${apiPrefix}/admin`, backupRoutes);
+prefixes.forEach((prefix) => {
+  app.use(`${prefix}/auth`, authLimiter, authRoutes);
+  app.use(`${prefix}/packages`, packageRoutes);
+  app.use(`${prefix}/purchases`, purchaseRoutes);
+  app.use(`${prefix}/payments`, paymentRoutes);
+  app.use(`${prefix}/users`, userRoutes);
+  app.use(`${prefix}/notifications`, notificationRoutes);
+  app.use(`${prefix}/members`, memberRoutes);
+  app.use(`${prefix}/memberships`, membershipRoutes);
+  app.use(`${prefix}/trainers`, trainerRoutes);
+  app.use(`${prefix}/personal-training`, personalTrainingRoutes);
+  app.use(`${prefix}/attendance`, attendanceRoutes);
+  app.use(`${prefix}/ai`, aiRoutes);
+  app.use(`${prefix}/chat`, chatRoutes);
+  app.use(`${prefix}/admin`, adminRoutes);
+  app.use(`${prefix}/admin`, backupRoutes);
+});
 
 // ============ Error Handling ============
 app.use(notFoundHandler);
