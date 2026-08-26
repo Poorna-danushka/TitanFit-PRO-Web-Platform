@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { authAPI } from '../api/apiService';
 import { useAuth } from '../context/AuthContext';
-import { Eye, EyeOff, Loader2, AlertCircle, Mail, Lock, ShieldCheck, Clock } from 'lucide-react';
+import { Eye, EyeOff, Loader2, AlertCircle, Mail, Lock, ShieldCheck, Clock, X, KeyRound, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   validateLoginForm,
@@ -22,6 +22,13 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [lockoutMs, setLockoutMs] = useState(0);
   const [sessionMsg, setSessionMsg] = useState('');
+
+  // Forgot password OTP modal state
+  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotSuccess, setForgotSuccess] = useState('');
+  const [forgotError, setForgotError] = useState('');
 
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -93,6 +100,35 @@ export default function Login() {
       setError(err.safeMessage || 'Invalid email or password');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleOpenForgotModal = () => {
+    setForgotEmail(formData.email || '');
+    setForgotError('');
+    setForgotSuccess('');
+    setShowForgotModal(true);
+  };
+
+  const handleForgotPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotEmail || !forgotEmail.includes('@')) {
+      setForgotError('Please enter a valid email address.');
+      return;
+    }
+
+    setForgotLoading(true);
+    setForgotError('');
+    setForgotSuccess('');
+
+    try {
+      const res = await authAPI.requestPasswordReset(sanitizeInput(forgotEmail));
+      setForgotSuccess(res.data?.message || 'Temporary OTP password sent to your email!');
+      setFormData((prev) => ({ ...prev, email: forgotEmail }));
+    } catch (err: any) {
+      setForgotError(err?.response?.data?.message || err?.safeMessage || 'Failed to send temporary password email.');
+    } finally {
+      setForgotLoading(false);
     }
   };
 
@@ -206,9 +242,18 @@ export default function Login() {
 
             {/* Password */}
             <div>
-              <label className="block text-[11px] font-display font-semibold uppercase tracking-widest text-gray-500 mb-2">
-                Password
-              </label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-[11px] font-display font-semibold uppercase tracking-widest text-gray-500">
+                  Password
+                </label>
+                <button
+                  type="button"
+                  onClick={handleOpenForgotModal}
+                  className="text-xs text-green-400 hover:text-green-300 transition-colors font-medium"
+                >
+                  Forgot password?
+                </button>
+              </div>
               <div className="relative">
                 <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600 pointer-events-none" />
                 <input
@@ -259,6 +304,116 @@ export default function Login() {
           </p>
         </motion.div>
       </div>
+
+      {/* Forgot Password OTP Modal */}
+      <AnimatePresence>
+        {showForgotModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-md bg-[#111115] border border-white/10 rounded-3xl p-6 shadow-2xl relative overflow-hidden"
+            >
+              {/* Close Button */}
+              <button
+                type="button"
+                onClick={() => setShowForgotModal(false)}
+                className="absolute top-4 right-4 p-2 text-gray-500 hover:text-white transition-colors rounded-full hover:bg-white/5"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-green-500/10 border border-green-500/20 text-green-400 flex items-center justify-center">
+                  <KeyRound className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">Reset Password via OTP</h3>
+                  <p className="text-xs text-gray-400">Receive a temporary password in your inbox</p>
+                </div>
+              </div>
+
+              {forgotSuccess ? (
+                <div className="space-y-4 py-2">
+                  <div className="p-4 rounded-2xl bg-green-500/10 border border-green-500/20 text-green-300 text-xs flex items-start gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-green-400 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-bold text-white text-sm mb-1">Temporary OTP Sent!</p>
+                      <p className="leading-relaxed">{forgotSuccess}</p>
+                      <p className="mt-2 text-gray-400 text-[11px]">
+                        Log in using your email and the temporary password received in your email. You will then be prompted to create your new permanent password.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotModal(false)}
+                    className="w-full py-3 bg-green-500 text-black font-bold rounded-xl hover:bg-green-400 transition-colors text-sm"
+                  >
+                    Got It — Return to Login
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleForgotPasswordSubmit} className="space-y-4">
+                  {forgotError && (
+                    <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      <span>{forgotError}</span>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-[11px] font-display font-semibold uppercase tracking-widest text-gray-400 mb-1.5">
+                      Account Email Address
+                    </label>
+                    <div className="relative">
+                      <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600 pointer-events-none" />
+                      <input
+                        type="email"
+                        required
+                        value={forgotEmail}
+                        onChange={(e) => { setForgotEmail(e.target.value); setForgotError(''); }}
+                        placeholder="you@example.com"
+                        className="input-dark w-full pl-10 text-sm"
+                      />
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-gray-500 leading-relaxed">
+                    We will send a one-time temporary password (OTP) to this email address. Once logged in, you must set a new permanent password.
+                  </p>
+
+                  <div className="flex gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowForgotModal(false)}
+                      className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-gray-300 text-sm font-semibold rounded-xl transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={forgotLoading}
+                      className="flex-1 py-3 bg-green-500 hover:bg-green-400 text-black text-sm font-bold rounded-xl transition-colors glow-green flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      {forgotLoading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Sending...</span>
+                        </>
+                      ) : (
+                        <span>Send OTP</span>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
+

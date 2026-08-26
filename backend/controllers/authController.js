@@ -2,7 +2,7 @@ import User from '../models/User.js';
 import logger from '../utils/logger.js';
 import { generateAccessToken, generateRefreshToken, generateVerificationToken, verifyAccessToken, verifyRefreshToken, verifyVerificationToken } from '../utils/jwt.js';
 import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '../constants/index.js';
-import { sendVerificationEmail, sendWelcomeEmail } from '../utils/email.js';
+import { sendVerificationEmail, sendWelcomeEmail, sendForgotPasswordOtpEmail } from '../utils/email.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { blacklistToken } from '../services/tokenBlacklistService.js';
 import { generateCsrfToken } from '../middleware/csrf.js';
@@ -485,6 +485,58 @@ export const resendVerificationEmail = asyncHandler(async (req, res) => {
       message: 'Failed to resend verification email',
     });
   }
+});
+
+/**
+ * Request Forgot Password Temporary OTP
+ * POST /api/v1/auth/forgot-password
+ */
+export const forgotPassword = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  const normalizedEmail = (email || '').trim().toLowerCase();
+
+  if (!normalizedEmail) {
+    return res.status(400).json({
+      success: false,
+      message: 'Email address is required.',
+    });
+  }
+
+  const user = await User.findOne({ email: normalizedEmail });
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: 'No account found with this email address.',
+    });
+  }
+
+  // Generate a random temporary OTP password (e.g. GF-9X4K2P)
+  const randomChars = Math.random().toString(36).substring(2, 8).toUpperCase();
+  const tempPassword = `GF-${randomChars}`;
+
+  // Update password and enforce mandatory password change on login
+  user.password = tempPassword;
+  user.mustChangePassword = true;
+  user.tempPasswordSetAt = new Date();
+  await user.save();
+
+  // Send email containing the temporary password
+  try {
+    await sendForgotPasswordOtpEmail(user.email, user.name, tempPassword);
+  } catch (emailErr) {
+    logger.error(`Failed to send forgot password email to ${user.email}: ${emailErr.message}`);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to dispatch password reset email. Please try again.',
+    });
+  }
+
+  logger.info(`Forgot password OTP generated and emailed to: ${user.email}`);
+
+  res.status(200).json({
+    success: true,
+    message: 'A temporary one-time password (OTP) has been sent to your email. Log in with it to create your new password.',
+  });
 });
 
 /**

@@ -2,6 +2,7 @@ import express from 'express';
 import {
   register,
   login,
+  forgotPassword,
   refreshAccessToken,
   verifyEmail,
   resendVerificationEmail,
@@ -12,7 +13,7 @@ import {
   changePassword,
 } from '../controllers/authController.js';
 import authMiddleware from '../middleware/auth.js';
-import { validate, registerValidator, loginValidator } from '../validators/index.js';
+import { validate, registerValidator, loginValidator, forgotPasswordValidator } from '../validators/index.js';
 import { uploadAvatar, uploadGallery } from '../config/cloudinary.js';
 import { uploadProfileImage, deleteProfileImage, uploadGalleryImage, deleteGalleryImage } from '../controllers/uploadController.js';
 
@@ -41,6 +42,7 @@ const router = express.Router();
 router.get('/csrf-token', getCsrfToken);
 router.post('/register', validate(registerValidator), register);
 router.post('/login', validate(loginValidator), login);
+router.post('/forgot-password', validate(forgotPasswordValidator), forgotPassword);
 router.post('/refresh', refreshAccessToken);
 router.post('/verify-email', verifyEmail);
 router.post('/resend-verification', resendVerificationEmail);

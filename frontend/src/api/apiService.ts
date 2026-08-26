@@ -191,6 +191,16 @@ export const adminAPI = {
   createPackage: (data: unknown) => api.post('/packages', data),
   updatePackage: (id: string, data: unknown) => api.put(`/packages/${id}`, data),
   deletePackage: (id: string) => api.delete(`/packages/${id}`),
+
+  // Backup / Scheduler
+  getBackupSettings: () => api.get('/admin/backups/settings'),
+  updateBackupSettings: (data: { scheduleType: string; scheduleTime?: string; customCron?: string; retentionDays: number; enabled: boolean; runOnStart: boolean }) => api.put('/admin/backups/settings', data),
+  listBackups: () => api.get('/admin/backups'),
+  // Backup create/restore/cleanup can take several minutes — use 10-minute timeout
+  createBackup: (label?: string) => api.post('/admin/backups/create', { label }, { timeout: 600_000 }),
+  restoreBackup: (backupKey: string) => api.post('/admin/backups/restore', { backupKey }, { timeout: 600_000 }),
+  deleteOldBackups: (days?: number) => api.delete('/admin/backups/cleanup', { params: days ? { days } : undefined, timeout: 60_000 }),
+  getSchedulerInfo: () => api.get('/admin/backups/config'),
 };
 
 // ─── Notification API ───────────────────────────────────────────────────────────
