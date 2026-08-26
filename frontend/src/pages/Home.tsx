@@ -2,25 +2,34 @@ import { useState, useEffect } from 'react';
 import LogoIcon from '../components/LogoIcon';
 import { Link } from 'react-router-dom';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { Activity, Dumbbell, CalendarCheck, ShieldCheck, ArrowRight, Zap, Check, Sparkles } from 'lucide-react';
-import { packageAPI, exerciseAPI } from '../api/apiService';
+import { Activity, Dumbbell, CalendarCheck, ShieldCheck, ArrowRight, Zap, Check, Sparkles, X } from 'lucide-react';
+import { packageAPI, exerciseAPI, trainerAPI } from '../api/apiService';
+import { Award, Star } from 'lucide-react';
 import ChatBot from '../components/ChatBot';
-
 
 const Home = () => {
   const [packages, setPackages] = useState<any[]>([]);
   const [exercises, setExercises] = useState<any[]>([]);
+  const [trainers, setTrainers] = useState<any[]>([]);
+  const [loadingTrainers, setLoadingTrainers] = useState<boolean>(true);
   const { scrollYProgress } = useScroll();
   const y = useTransform(scrollYProgress, [0, 1], [0, 300]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [pkgRes, exRes] = await Promise.all([packageAPI.getAll(), exerciseAPI.getAll()]);
-        setPackages(pkgRes.data.packages?.slice(0, 3) || []);
+        const [pkgRes, exRes, trnRes] = await Promise.all([
+          packageAPI.getAll().catch(() => ({ data: { packages: [] } })),
+          exerciseAPI.getAll().catch(() => ({ data: { exercises: [] } })),
+          trainerAPI.getAll().catch(() => ({ data: { trainers: [] } })),
+        ]);
+        setPackages(pkgRes.data.packages || []);
         setExercises(exRes.data.exercises?.slice(0, 4) || []);
+        setTrainers(trnRes.data.trainers || trnRes.data.data || []);
       } catch (error) {
         console.error('Failed to fetch data for home page', error);
+      } finally {
+        setLoadingTrainers(false);
       }
     };
     fetchData();
@@ -68,6 +77,10 @@ const Home = () => {
             </a>
             <a href="#packages" className="hover:text-white transition-colors relative group">
               Packages
+              <span className="absolute -bottom-2 left-0 w-0 h-0.5 bg-green-500 transition-all group-hover:w-full" />
+            </a>
+            <a href="#trainers" className="hover:text-white transition-colors relative group">
+              Trainers
               <span className="absolute -bottom-2 left-0 w-0 h-0.5 bg-green-500 transition-all group-hover:w-full" />
             </a>
             <a href="#exercises" className="hover:text-white transition-colors relative group">
@@ -189,76 +202,325 @@ const Home = () => {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-[600px] bg-green-500/5 rounded-full blur-[150px] pointer-events-none" />
         
         <div className="max-w-7xl mx-auto px-6 relative z-10">
-          <motion.div {...fadeIn} className="text-center mb-24">
-            <h2 className="text-4xl md:text-5xl font-extrabold mb-6 tracking-tight">Premium Training</h2>
-            <p className="text-xl text-gray-400">Join thousands of athletes transforming their bodies.</p>
+          <motion.div {...fadeIn} className="text-center mb-20 max-w-3xl mx-auto">
+            <div className="inline-flex items-center justify-center p-3 bg-green-500/10 rounded-2xl mb-6 ring-1 ring-green-500/30">
+              <ShieldCheck className="w-8 h-8 text-green-400" />
+            </div>
+            <h2 className="text-4xl md:text-5xl font-extrabold mb-6 tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-gray-200 to-gray-400">
+              Select Your Plan
+            </h2>
+            <p className="text-xl text-gray-400 leading-relaxed">
+              Explore our fitness packages with transparent 1-on-1 Personal Trainer entitlements and workout access.
+            </p>
           </motion.div>
 
-          <div className="grid lg:grid-cols-3 gap-8 items-center">
+          {/* Package Cards Grid */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 items-stretch mb-20">
             {packages.map((pkg: any, idx: number) => {
-              const isPopular = idx === 1 || pkg.name.toLowerCase().includes('premium');
+              const isPopular = idx === 1 || pkg.name.toLowerCase().includes('premium') || pkg.name.toLowerCase().includes('pro');
+              const hasPT = Boolean(
+                pkg.hasPersonalTrainer === true ||
+                pkg.maxPTSessions > 0 ||
+                (pkg.benefits || []).some((b: string) => /trainer|1-on-1|pt/i.test(b)) ||
+                /vip|pro|elite|trainer/i.test(pkg.name)
+              );
+
               return (
                 <motion.div 
-                  key={pkg._id}
+                  key={pkg._id || idx}
                   initial={{ opacity: 0, y: 50 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.6, delay: idx * 0.15 }}
                   className={`
                     relative rounded-3xl flex flex-col overflow-hidden transition-all duration-500 group
-                    ${isPopular 
-                      ? 'bg-gradient-to-b from-gray-900 to-[#0a0a0c] border-2 border-green-500/50 shadow-[0_0_50px_rgba(34,197,94,0.15)] lg:-translate-y-8 z-20' 
-                      : 'bg-[#111113] border border-white/5 hover:border-white/20 z-10'
+                    ${hasPT
+                      ? 'bg-gradient-to-b from-[#161224] to-[#0c0c10] border-2 border-purple-500/40 shadow-[0_0_40px_rgba(147,51,234,0.12)] lg:-translate-y-2'
+                      : isPopular 
+                      ? 'bg-gradient-to-b from-gray-900 to-[#111] border-2 border-green-500/50 shadow-[0_0_40px_rgba(34,197,94,0.15)] lg:-translate-y-2' 
+                      : 'bg-[#111113] border border-white/5 hover:border-green-500/30'
                     }
                   `}
                 >
-                  {isPopular && (
-                    <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-green-400 to-emerald-600" />
-                  )}
-                  {isPopular && (
-                    <div className="absolute top-0 right-8 px-4 py-1.5 bg-green-500 rounded-b-lg flex items-center gap-1 shadow-lg shadow-green-500/20">
-                      <Zap className="w-3 h-3 text-black fill-black" />
-                      <span className="text-[10px] font-black text-black uppercase tracking-widest">Popular</span>
+                  {/* Top Badges */}
+                  {hasPT ? (
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 px-4 py-1 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-b-xl flex items-center gap-1.5 shadow-lg shadow-purple-500/20 z-10">
+                      <Award className="w-3.5 h-3.5 text-yellow-300" />
+                      <span className="text-[10px] font-black text-white uppercase tracking-wider">Personal Trainer Included</span>
                     </div>
-                  )}
+                  ) : isPopular ? (
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 px-4 py-1 bg-gradient-to-r from-green-600 to-emerald-400 rounded-b-xl flex items-center gap-1 shadow-lg shadow-green-500/20 z-10">
+                      <Sparkles className="w-3 h-3 text-white" />
+                      <span className="text-[10px] font-black text-white uppercase tracking-wider">Most Popular</span>
+                    </div>
+                  ) : null}
                   
-                  <div className={`p-10 pb-6 ${isPopular ? 'pt-12' : ''}`}>
-                    <h3 className="text-2xl md:text-3xl font-bold mb-4">{pkg.name}</h3>
-                    <div className="flex items-end gap-1 mb-6">
-                      <span className="text-4xl md:text-5xl font-extrabold tracking-tight">LKR {(pkg.price || 0).toLocaleString()}</span>
-                      <span className="text-gray-400 font-medium mb-2">/{pkg.duration}</span>
+                  <div className={`p-8 pb-5 ${hasPT || isPopular ? 'pt-9' : ''}`}>
+                    <h3 className="text-2xl font-bold mb-2 text-white flex items-center gap-2">
+                      {pkg.name}
+                      {isPopular && !hasPT && <Zap className="w-5 h-5 text-green-400" />}
+                      {hasPT && <Award className="w-5 h-5 text-purple-400" />}
+                    </h3>
+                    <div className="flex items-end gap-1 mb-3">
+                      <span className="text-3xl font-black tracking-tight">LKR {(pkg.price || 0).toLocaleString()}</span>
+                      <span className="text-gray-400 font-medium mb-1 text-xs">/{pkg.duration || '1 Month'}</span>
                     </div>
-                    <p className="text-gray-400 text-sm leading-relaxed mb-8 border-b border-white/5 pb-8">{pkg.description}</p>
-                    
-                    <div className="space-y-4 mb-10">
-                      {(pkg.benefits || pkg.features || (pkg.exercises?.map((e: any) => e.name) || [])).slice(0, 4).map((item: any, idx: number) => {
-                        const label = typeof item === 'string' ? item : item.name || item;
-                        return (
-                          <div key={idx} className="flex items-center gap-4">
-                            <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${isPopular ? 'bg-green-500/20' : 'bg-white/5'}`}>
-                              <Check className={`w-3.5 h-3.5 ${isPopular ? 'text-green-400' : 'text-gray-400'}`} strokeWidth={3} />
-                            </div>
-                            <span className="font-medium text-gray-300">{label}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
+                    <p className="text-gray-400 text-xs leading-relaxed">
+                      {pkg.description || 'Comprehensive gym access and structured progression.'}
+                    </p>
                   </div>
+
+                  <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-white/10 to-transparent my-1" />
                   
-                  <div className="p-10 pt-0 mt-auto">
-                    <Link to="/login" className={`
-                      w-full py-4 rounded-xl font-black flex items-center justify-center transition-all duration-300
-                      ${isPopular 
-                        ? 'bg-green-500 text-black shadow-[0_0_20px_rgba(34,197,94,0.3)] hover:shadow-[0_0_30px_rgba(34,197,94,0.5)] hover:scale-[1.02]' 
-                        : 'bg-white/5 text-white hover:bg-white/10'
-                      }
-                    `}>
-                      Get Started
+                  <div className="flex-1 p-8 pt-4 flex flex-col justify-between">
+                    <div>
+                      <h4 className="font-bold text-xs uppercase tracking-wider mb-4 text-gray-400 flex items-center gap-2">
+                        Plan Features & Entitlements
+                      </h4>
+                      
+                      <div className="space-y-3 mb-6">
+                        {/* Base Gym Features */}
+                        <div className="flex items-center gap-3">
+                          <div className="w-4 h-4 rounded-full bg-green-500/10 flex items-center justify-center shrink-0">
+                            <Check className="w-3 h-3 text-green-400" strokeWidth={3} />
+                          </div>
+                          <span className="text-gray-300 text-xs">Full Gym Floor & Equipment Access</span>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          <div className="w-4 h-4 rounded-full bg-green-500/10 flex items-center justify-center shrink-0">
+                            <Check className="w-3 h-3 text-green-400" strokeWidth={3} />
+                          </div>
+                          <span className="text-gray-300 text-xs">Workout Library & Mobile App Tracking</span>
+                        </div>
+
+                        {/* Explicit Personal Trainer Feature */}
+                        <div className="flex items-center gap-3">
+                          <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${hasPT ? 'bg-purple-500/20 text-purple-400' : 'bg-red-500/10 text-red-400'}`}>
+                            {hasPT ? (
+                              <Check className="w-3 h-3 text-purple-400" strokeWidth={3} />
+                            ) : (
+                              <X className="w-3 h-3 text-red-400" strokeWidth={3} />
+                            )}
+                          </div>
+                          <span className={`text-xs font-semibold ${hasPT ? 'text-purple-300' : 'text-gray-500 line-through'}`}>
+                            {hasPT ? 'Dedicated 1-on-1 Personal Trainer' : 'Personal Trainer (Not Included)'}
+                          </span>
+                        </div>
+
+                        {/* Explicit Trainer Sessions Feature */}
+                        <div className="flex items-center gap-3">
+                          <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${hasPT ? 'bg-purple-500/20 text-purple-400' : 'bg-red-500/10 text-red-400'}`}>
+                            {hasPT ? (
+                              <Check className="w-3 h-3 text-purple-400" strokeWidth={3} />
+                            ) : (
+                              <X className="w-3 h-3 text-red-400" strokeWidth={3} />
+                            )}
+                          </div>
+                          <span className={`text-xs font-semibold ${hasPT ? 'text-purple-300' : 'text-gray-500 line-through'}`}>
+                            {hasPT ? `${pkg.maxPTSessions || 8} 1-on-1 Trainer Sessions / Month` : 'Trainer Sessions (Not Included)'}
+                          </span>
+                        </div>
+
+                        {/* Additional package benefits */}
+                        {(pkg.benefits || []).filter((b: string) => !/trainer|1-on-1|pt/i.test(b)).slice(0, 2).map((item: string, bIdx: number) => (
+                          <div key={bIdx} className="flex items-center gap-3">
+                            <div className="w-4 h-4 rounded-full bg-green-500/10 flex items-center justify-center shrink-0">
+                              <Check className="w-3 h-3 text-green-400" strokeWidth={3} />
+                            </div>
+                            <span className="text-gray-300 text-xs">{item}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <Link
+                      to="/packages"
+                      className={`
+                        w-full py-3.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all duration-300 relative overflow-hidden group/btn
+                        ${hasPT
+                          ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-600/30 hover:shadow-purple-600/50 hover:-translate-y-0.5'
+                          : isPopular 
+                          ? 'bg-gradient-to-r from-green-500 to-emerald-400 text-black shadow-[0_0_20px_rgba(34,197,94,0.3)] hover:shadow-[0_0_30px_rgba(34,197,94,0.5)] hover:-translate-y-0.5' 
+                          : 'bg-white/5 text-white hover:bg-white/10 border border-white/10 hover:border-white/20'
+                        }
+                      `}
+                    >
+                      <span>{hasPT ? 'Get PT Plan' : isPopular ? 'Choose Plan' : 'Get Started'}</span>
+                      <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
                     </Link>
                   </div>
                 </motion.div>
               );
             })}
+          </div>
+
+          {/* Feature Comparison Table */}
+          <div className="max-w-5xl mx-auto w-full px-4 relative z-10">
+            <div className="bg-[#111115]/90 border border-white/10 rounded-3xl p-6 md:p-8 shadow-2xl overflow-hidden">
+              <div className="mb-6 text-center">
+                <h3 className="text-xl md:text-2xl font-bold text-white mb-1">
+                  Plan Entitlement Comparison
+                </h3>
+                <p className="text-xs text-gray-400">
+                  Transparent feature breakdown. Personal Trainer access is strictly plan-entitled.
+                </p>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-white/10 text-gray-400 font-bold uppercase tracking-wider">
+                      <th className="py-3 px-4">Feature</th>
+                      <th className="py-3 px-4 text-center">Basic / Standard</th>
+                      <th className="py-3 px-4 text-center text-purple-400">Pro / VIP (PT Included)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5 text-gray-300">
+                    <tr>
+                      <td className="py-3 px-4 font-semibold text-white">Full Gym Floor Access</td>
+                      <td className="py-3 px-4 text-center text-green-400 font-bold">✓ Included</td>
+                      <td className="py-3 px-4 text-center text-green-400 font-bold">✓ Included</td>
+                    </tr>
+                    <tr>
+                      <td className="py-3 px-4 font-semibold text-white">Workout & Routine Tracking</td>
+                      <td className="py-3 px-4 text-center text-green-400 font-bold">✓ Included</td>
+                      <td className="py-3 px-4 text-center text-green-400 font-bold">✓ Included</td>
+                    </tr>
+                    <tr>
+                      <td className="py-3 px-4 font-semibold text-white">Progress & Streak Analytics</td>
+                      <td className="py-3 px-4 text-center text-green-400 font-bold">✓ Included</td>
+                      <td className="py-3 px-4 text-center text-green-400 font-bold">✓ Included</td>
+                    </tr>
+                    <tr className="bg-purple-950/20">
+                      <td className="py-3 px-4 font-bold text-purple-300">Dedicated 1-on-1 Personal Trainer</td>
+                      <td className="py-3 px-4 text-center text-red-400 font-bold">✕ No Access</td>
+                      <td className="py-3 px-4 text-center text-purple-400 font-bold">✓ Unlocked</td>
+                    </tr>
+                    <tr className="bg-purple-950/20">
+                      <td className="py-3 px-4 font-bold text-purple-300">Included 1-on-1 PT Sessions</td>
+                      <td className="py-3 px-4 text-center text-red-400 font-bold">✕ 0 Sessions</td>
+                      <td className="py-3 px-4 text-center text-purple-400 font-bold">✓ 8 – 16 Sessions / Mo</td>
+                    </tr>
+                    <tr>
+                      <td className="py-3 px-4 font-semibold text-white">Coach Slot Availability & Booking</td>
+                      <td className="py-3 px-4 text-center text-red-400 font-bold">✕ Inactive</td>
+                      <td className="py-3 px-4 text-center text-purple-400 font-bold">✓ Live Booking</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Meet Our Elite Personal Trainers Section */}
+      <section id="trainers" className="py-32 relative bg-black/40 border-y border-white/[0.04] overflow-hidden">
+        <div className="absolute top-0 right-1/4 w-[500px] h-[500px] bg-purple-600/10 blur-[150px] rounded-full pointer-events-none" />
+        <div className="max-w-7xl mx-auto px-6 relative z-10">
+          <motion.div {...fadeIn} className="text-center mb-20">
+            <span className="px-4 py-1.5 bg-purple-500/10 text-purple-400 text-xs font-bold uppercase tracking-widest rounded-full border border-purple-500/20 inline-flex items-center gap-1.5 mb-4">
+              <Award className="w-3.5 h-3.5" /> Certified Fitness Coaches
+            </span>
+            <h2 className="text-4xl md:text-5xl font-extrabold mb-5 tracking-tight">Meet Our Elite Trainers</h2>
+            <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+              Our world-class certified personal trainers craft personalized 1-on-1 programs to help you shatter your fitness limits.
+            </p>
+          </motion.div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {loadingTrainers ? (
+              <div className="col-span-3 text-center py-12 text-gray-500 animate-pulse">
+                Loading trainers...
+              </div>
+            ) : trainers.length > 0 ? (
+              trainers.slice(0, 6).map((trainer: any, idx: number) => (
+                <motion.div
+                  key={trainer._id || idx}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: idx * 0.1 }}
+                  className="bg-[#111115]/90 border border-white/[0.08] hover:border-purple-500/40 rounded-3xl p-6 transition-all duration-300 group hover:-translate-y-1 shadow-xl flex flex-col justify-between"
+                >
+                  <div>
+                    {/* Trainer Avatar & Header */}
+                    <div className="flex items-center gap-4 mb-5">
+                      <div className="w-18 h-18 rounded-2xl bg-gradient-to-br from-purple-500/30 to-indigo-500/30 border border-purple-500/30 overflow-hidden shrink-0 flex items-center justify-center">
+                        {trainer.userId?.profileImage || trainer.profileImage ? (
+                          <img
+                            src={trainer.userId?.profileImage || trainer.profileImage}
+                            alt={trainer.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          />
+                        ) : (
+                          <div className="text-xl font-black text-purple-300">
+                            {(trainer.name || 'Coach').charAt(0)}
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <span className="px-2.5 py-0.5 bg-green-500/10 text-green-400 text-[10px] font-bold uppercase rounded-md border border-green-500/20">
+                            Available for 1-on-1
+                          </span>
+                        </div>
+                        <h3 className="text-xl font-bold text-white group-hover:text-purple-300 transition-colors">
+                          {trainer.name}
+                        </h3>
+                        <p className="text-xs text-gray-400 font-medium">
+                          {trainer.experience ? `${trainer.experience}+ Years Experience` : 'Elite Fitness Coach'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Bio */}
+                    <p className="text-gray-300 text-xs leading-relaxed line-clamp-3 mb-5">
+                      {trainer.bio || 'Dedicated personal coach focused on athletic performance, form correction, and targeted strength development.'}
+                    </p>
+
+                    {/* Specializations & Badges */}
+                    <div className="flex flex-wrap gap-1.5 mb-6">
+                      {(Array.isArray(trainer.specialization) ? trainer.specialization : [trainer.specialization || 'Strength & Conditioning']).map((spec: string, sIdx: number) => (
+                        <span
+                          key={sIdx}
+                          className="px-2.5 py-1 bg-white/[0.04] border border-white/[0.08] text-purple-300 text-[11px] font-semibold rounded-lg"
+                        >
+                          {spec}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-white/5 flex items-center justify-between">
+                    <div className="flex items-center gap-1 text-amber-400 text-xs font-bold">
+                      <Star className="w-4 h-4 fill-amber-400" />
+                      <span>{trainer.rating || '5.0'}</span>
+                      <span className="text-gray-500 font-normal">({trainer.reviewsCount || 10} reviews)</span>
+                    </div>
+                    <Link
+                      to="/packages"
+                      className="px-4 py-2 bg-white/5 hover:bg-purple-600 text-white font-bold text-xs rounded-xl transition-all"
+                    >
+                      Get PT Plan
+                    </Link>
+                  </div>
+                </motion.div>
+              ))
+            ) : (
+              <div className="col-span-3 text-center py-12 text-gray-500">
+                No trainers currently available.
+              </div>
+            )}
+          </div>
+
+          {/* Plan requirement disclaimer */}
+          <div className="mt-12 text-center">
+            <p className="text-xs text-gray-400 flex items-center justify-center gap-2">
+              <Sparkles className="w-4 h-4 text-purple-400" />
+              <span>Personal training sessions are available to members who purchase an eligible membership plan.</span>
+            </p>
           </div>
         </div>
       </section>
@@ -334,7 +596,7 @@ const Home = () => {
             <ul className="space-y-2 text-sm text-gray-400">
               <li><Link to="/packages" className="hover:text-green-400 transition-colors">Packages</Link></li>
               <li><Link to="/workouts" className="hover:text-green-400 transition-colors">Workouts</Link></li>
-              <li><Link to="/trainers" className="hover:text-green-400 transition-colors">Trainers</Link></li>
+              <li><a href="#trainers" className="hover:text-green-400 transition-colors">Trainers</a></li>
               <li><Link to="/login" className="hover:text-green-400 transition-colors">Member Sign In</Link></li>
             </ul>
           </div>

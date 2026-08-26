@@ -1,4 +1,5 @@
 import Workout from '../models/Workout.js';
+import { checkUserMembershipStatus } from '../utils/membershipHelper.js';
 
 export const getAllWorkouts = async (req, res) => {
   try {
@@ -32,6 +33,25 @@ export const getWorkoutById = async (req, res) => {
 
 export const createWorkout = async (req, res) => {
   try {
+    const isPrivileged = ['ADMIN', 'SYSTEM_ADMIN', 'TRAINER', 'STAFF'].includes(req.userRole);
+    if (!isPrivileged) {
+      const membershipStatus = await checkUserMembershipStatus(req.userId);
+      if (!membershipStatus.hasActiveMembership) {
+        if (membershipStatus.isPendingVerification) {
+          return res.status(403).json({
+            success: false,
+            code: 'PENDING_VERIFICATION',
+            message: 'Your bank transfer is awaiting administrator verification.',
+          });
+        }
+        return res.status(403).json({
+          success: false,
+          code: 'MEMBERSHIP_REQUIRED',
+          message: 'Active membership required for this action',
+        });
+      }
+    }
+
     const { exerciseId, duration, sets, reps, date, difficulty } = req.body;
     
     const workout = new Workout({

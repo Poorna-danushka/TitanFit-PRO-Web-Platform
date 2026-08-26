@@ -11,6 +11,7 @@ const membershipPlanSchema = new mongoose.Schema(
     features: [String],
     maxClassesPerWeek: { type: Number, default: -1 }, // -1 = unlimited
     maxPTSessionsPerMonth: { type: Number, default: 0 },
+    hasPersonalTrainer: { type: Boolean, default: false },
     includesNutrition: { type: Boolean, default: false },
     includeAIAssistant: { type: Boolean, default: true },
     isActive: { type: Boolean, default: true },

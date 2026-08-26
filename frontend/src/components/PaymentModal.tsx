@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (data?: any) => void;
   packageId: string;
   packageName: string;
   price: number;
@@ -47,7 +47,7 @@ export default function PaymentModal({
     try {
       const res = await purchaseAPI.cardPayment({ packageId, price });
       success(res.data.message || 'Card payment processed & receipt emailed!');
-      onSuccess();
+      onSuccess(res.data);
     } catch (err: any) {
       setError(err?.response?.data?.message || err?.message || 'Payment failed. Please try again.');
     } finally {

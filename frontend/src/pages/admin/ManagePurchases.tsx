@@ -4,6 +4,15 @@ import { ShoppingCart, Package, TrendingUp, CheckCircle, Building2, Check, X, Cl
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
 
+function getCustomerDisplayName(user: any): string {
+  if (!user) return 'Member';
+  if (typeof user === 'string') return user;
+  const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ').trim();
+  if (fullName) return fullName;
+  if (user.name && !user.name.includes('@')) return user.name;
+  return user.email ? user.email.split('@')[0] : 'Member';
+}
+
 export default function ManagePurchases() {
   const [purchases, setPurchases] = useState<any[]>([]);
   const [filter, setFilter] = useState<'ALL' | 'PENDING' | 'PAID'>('ALL');
@@ -165,14 +174,14 @@ export default function ManagePurchases() {
                           <div className="flex items-center gap-4">
                             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500/20 to-amber-600/10 text-orange-400 flex items-center justify-center font-bold text-lg ring-1 ring-orange-500/30 shadow-inner overflow-hidden shrink-0">
                               {p.userId?.profileImage ? (
-                                <img src={p.userId.profileImage} alt={p.userId?.name || 'U'} className="w-full h-full object-cover" />
+                                <img src={p.userId.profileImage} alt={getCustomerDisplayName(p.userId)} className="w-full h-full object-cover" />
                               ) : (
-                                (p.userId?.name || 'U').charAt(0).toUpperCase()
+                                getCustomerDisplayName(p.userId).charAt(0).toUpperCase()
                               )}
                             </div>
                             <div className="flex flex-col">
                               <span className="font-bold text-gray-200 text-sm group-hover:text-white transition-colors">
-                                {p.userId?.name || p.userId || 'Unknown User'}
+                                {getCustomerDisplayName(p.userId)}
                               </span>
                               {p.userId?.email && (
                                 <span className="text-[11px] text-gray-500 font-medium">{p.userId.email}</span>

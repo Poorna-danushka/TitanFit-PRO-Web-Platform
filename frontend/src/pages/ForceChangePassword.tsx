@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authAPI } from '../api/apiService';
 import { useAuth } from '../context/AuthContext';
@@ -10,11 +10,9 @@ export default function ForceChangePassword() {
   const { user, updateUser, logout } = useAuth();
   const navigate = useNavigate();
 
-  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
@@ -34,26 +32,17 @@ export default function ForceChangePassword() {
     e.preventDefault();
     setError('');
 
-    if (!currentPassword.trim()) {
-      setError('Please enter your current temporary password.');
-      return;
-    }
-
     if (!isStrong) {
       setError('Please meet all password requirements before proceeding.');
-      return;
-    }
-
-    if (currentPassword === newPassword) {
-      setError('Your new password must be different from your temporary password.');
       return;
     }
 
     setLoading(true);
 
     try {
-      const res = await authAPI.changePassword(currentPassword, newPassword);
-      toast.success(res.data.message || 'Password successfully updated! Welcome to GymFit Pro.');
+      // Call changePassword without requiring current password since user is already verified via login
+      const res = await authAPI.changePassword(newPassword);
+      toast.success(res.data.message || 'Password successfully created! Welcome to GymFit Pro.');
 
       // Update auth context state
       updateUser({ mustChangePassword: false });
@@ -71,7 +60,7 @@ export default function ForceChangePassword() {
         navigate(targetPath, { replace: true });
       }, 500);
     } catch (err: any) {
-      const msg = err?.response?.data?.message || err?.safeMessage || err?.message || 'Failed to update password. Please check your temporary password.';
+      const msg = err?.response?.data?.message || err?.safeMessage || err?.message || 'Failed to update password.';
       setError(msg);
       toast.error(msg);
     } finally {
@@ -96,18 +85,18 @@ export default function ForceChangePassword() {
             <KeyRound className="w-8 h-8 text-green-400" />
           </div>
           <h1 className="text-3xl font-display font-extrabold tracking-tight text-white mb-2">
-            First-Time Login Security
+            Create Your Permanent Password
           </h1>
           <p className="text-gray-400 text-sm max-w-md mx-auto leading-relaxed">
-            Welcome, <span className="text-white font-semibold">{user?.name || user?.email}</span>! An administrator generated a temporary password for your account. Please set a new permanent password to continue.
+            Welcome, <span className="text-white font-semibold">{user?.name || user?.email}</span>! Please create a new secure password for your account to proceed to your dashboard.
           </p>
         </div>
 
         {/* Form Card */}
         <div className="bg-[#111115]/90 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl space-y-6 relative overflow-hidden">
-          <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs">
-            <ShieldCheck className="w-5 h-5 flex-shrink-0 text-amber-400" />
-            <span>You must change your temporary password before accessing your dashboard.</span>
+          <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-green-500/10 border border-green-500/20 text-green-300 text-xs">
+            <ShieldCheck className="w-5 h-5 flex-shrink-0 text-green-400" />
+            <span>One-time password verified. Set your new personal password below.</span>
           </div>
 
           <AnimatePresence>
@@ -125,33 +114,6 @@ export default function ForceChangePassword() {
           </AnimatePresence>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Current Temporary Password */}
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">
-                Temporary Password (from email)
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-500">
-                  <Lock className="w-4 h-4" />
-                </div>
-                <input
-                  type={showCurrent ? 'text' : 'password'}
-                  required
-                  value={currentPassword}
-                  onChange={(e) => { setCurrentPassword(e.target.value); setError(''); }}
-                  placeholder="Enter temporary password"
-                  className="w-full pl-11 pr-11 py-3.5 bg-black/50 border border-white/10 rounded-xl text-sm text-white placeholder-gray-600 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all font-mono"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowCurrent(!showCurrent)}
-                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-500 hover:text-gray-300"
-                >
-                  {showCurrent ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-
             {/* New Password */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">
@@ -246,11 +208,11 @@ export default function ForceChangePassword() {
               {loading ? (
                 <>
                   <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
-                  <span>Updating Security Credentials...</span>
+                  <span>Setting Permanent Password...</span>
                 </>
               ) : (
                 <>
-                  <span>Save Password & Continue to Dashboard</span>
+                  <span>Save Password & Access Dashboard</span>
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </>
               )}

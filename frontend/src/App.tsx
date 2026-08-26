@@ -31,6 +31,7 @@ import AdminRoute from './components/AdminRoute';
 import AnyUserRoute from './components/AnyUserRoute';
 import RoleAdaptiveLayout from './components/RoleAdaptiveLayout';
 import RoleRoute from './components/RoleRoute';
+import PTRoute from './components/PTRoute';
 import UserLayout from './components/UserLayout';
 import AdminLayout from './components/AdminLayout';
 import Notifications from './components/Notifications';
@@ -107,7 +108,7 @@ function App() {
               <Route path="/packages" element={<PackageList />} />
               <Route path="/my-package" element={<MyPackage />} />
               <Route path="/workouts" element={<Workouts />} />
-              <Route path="/trainers" element={<Trainers />} />
+              <Route path="/trainers" element={<PTRoute><Trainers /></PTRoute>} />
               <Route path="/attendance-qr" element={<AttendanceQR />} />
               <Route path="/progress" element={<ProgressPage />} />
 

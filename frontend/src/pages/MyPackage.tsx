@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react';
 import { purchaseAPI, workoutAPI } from '../api/apiService';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { PlayCircle, ShieldAlert, CheckCircle2 } from 'lucide-react';
+import { PlayCircle, ShieldAlert, CheckCircle2, Clock, Building2, AlertCircle, ArrowRight } from 'lucide-react';
 
 export default function MyPackage() {
-  const [purchase, setPurchase] = useState<any>(null);
+  const [activePurchase, setActivePurchase] = useState<any>(null);
+  const [pendingPurchase, setPendingPurchase] = useState<any>(null);
   const [todayCompletedIds, setTodayCompletedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
 
@@ -16,13 +17,18 @@ export default function MyPackage() {
   const fetchMyPackage = async () => {
     try {
       const [pRes, wRes] = await Promise.all([
-        purchaseAPI.getMy(),
+        purchaseAPI.getMy().catch(() => ({ data: { purchases: [] } })),
         workoutAPI.getMy().catch(() => ({ data: { workouts: [] } }))
       ]);
 
-      if (pRes.data.purchases && pRes.data.purchases.length > 0) {
-        setPurchase(pRes.data.purchases[0]);
-      }
+      const purchases = pRes.data?.purchases || [];
+      const active = pRes.data?.activePurchases?.[0] || purchases.find((p: any) => p.status === 'paid');
+      const pending = pRes.data?.pendingPurchases?.[0] || purchases.find(
+        (p: any) => ['pending_approval', 'pending_verification', 'pending'].includes(p.status) && p.paymentMethod === 'bank_transfer'
+      );
+
+      setActivePurchase(active || null);
+      setPendingPurchase(pending || null);
 
       const workouts = wRes.data?.workouts || [];
       const todayStr = new Date().toDateString();
@@ -41,7 +47,89 @@ export default function MyPackage() {
 
   if (loading) return <div className="text-white text-center py-20">Loading your journey...</div>;
 
-  if (!purchase) {
+  // Case 1: Pending Bank Transfer & No Active Membership
+  if (!activePurchase && pendingPurchase) {
+    const pendingPkg = pendingPurchase.packageId;
+    return (
+      <div className="pb-12 text-white">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-gradient-to-br from-[#1a150d] via-gray-900 to-[#121110] border border-amber-500/30 rounded-3xl p-8 mb-12 relative overflow-hidden shadow-2xl"
+        >
+          <div className="absolute top-0 right-0 w-80 h-80 bg-amber-500/10 rounded-full blur-[90px] pointer-events-none" />
+
+          <div className="relative z-10">
+            <div className="flex items-center gap-2 mb-4 flex-wrap">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/20 text-amber-400 text-xs font-extrabold uppercase tracking-wider rounded-lg border border-amber-500/30">
+                <Clock className="w-3.5 h-3.5" /> Payment Pending Verification
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/5 text-gray-300 text-xs font-semibold rounded-lg border border-white/10">
+                <Building2 className="w-3.5 h-3.5 text-amber-400" /> Bank Transfer
+              </span>
+              {pendingPurchase.bankTransferReference && (
+                <span className="text-xs font-mono text-amber-300/80 bg-black/40 px-3 py-1 rounded-lg border border-white/5">
+                  Ref: {pendingPurchase.bankTransferReference}
+                </span>
+              )}
+            </div>
+
+            <h1 className="text-3xl md:text-4xl font-bold mb-2 text-white">
+              Awaiting Administrator Approval
+            </h1>
+            <p className="text-gray-300 text-sm md:text-base mb-6 max-w-2xl leading-relaxed">
+              Your bank transfer payment for <strong className="text-white font-semibold">{pendingPkg?.name || 'Gym Package'}</strong> has been recorded and submitted to gym administration for verification.
+            </p>
+
+            <div className="grid sm:grid-cols-3 gap-4 p-5 bg-black/40 border border-white/5 rounded-2xl mb-6">
+              <div>
+                <p className="text-gray-500 text-xs uppercase font-medium mb-0.5">Purchased Package</p>
+                <p className="font-bold text-base text-white">{pendingPkg?.name || 'Selected Package'}</p>
+              </div>
+              <div>
+                <p className="text-gray-500 text-xs uppercase font-medium mb-0.5">Amount Submitted</p>
+                <p className="font-bold text-base text-amber-400">LKR {(pendingPurchase.price || pendingPkg?.price || 0).toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-gray-500 text-xs uppercase font-medium mb-0.5">Submission Date</p>
+                <p className="font-bold text-base text-gray-300">
+                  {new Date(pendingPurchase.createdAt || Date.now()).toLocaleDateString()}
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-start gap-3 text-xs text-amber-200 mb-6">
+              <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-bold mb-0.5">Your bank transfer is awaiting administrator verification.</p>
+                <p className="text-gray-300 leading-relaxed">
+                  Your package workout plan, trainer entitlements, attendance QR pass, and digital receipt will be unlocked immediately once an admin verifies your transfer.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-4">
+              <Link
+                to="/dashboard"
+                className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl transition-all flex items-center gap-2 border border-white/10"
+              >
+                Go to Dashboard <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+              <Link
+                to="/packages"
+                className="px-6 py-3 bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs rounded-xl transition-all shadow-md shadow-amber-500/20"
+              >
+                Explore Other Plans
+              </Link>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // Case 2: No Active Package and No Pending Bank Transfer
+  if (!activePurchase) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
         <div className="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center mb-6">
@@ -56,7 +144,8 @@ export default function MyPackage() {
     );
   }
 
-  const pkg = purchase.packageId;
+  // Case 3: Active Approved Membership Exists
+  const pkg = activePurchase.packageId;
 
   return (
     <div className="pb-12 text-white">

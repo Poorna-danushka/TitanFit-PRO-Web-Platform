@@ -38,6 +38,18 @@ const packageSchema = new mongoose.Schema(
       default: '',
     },
     benefits: [String],
+    hasPersonalTrainer: {
+      type: Boolean,
+      default: false,
+    },
+    maxPTSessions: {
+      type: Number,
+      default: 0,
+    },
+    durationMonths: {
+      type: Number,
+      default: 1,
+    },
     isActive: {
       type: Boolean,
       default: true,

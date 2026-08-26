@@ -455,6 +455,40 @@
     border-radius: 0 4px 4px 0;
   }
 
+  .sidebar-nav-item-trainer.active {
+    background: rgba(168, 85, 247, 0.12);
+    color: #c4b5fd;
+    border: 1px solid rgba(168, 85, 247, 0.22);
+  }
+
+  .sidebar-nav-item-trainer.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 25%;
+    height: 50%;
+    width: 3px;
+    background: #a855f7;
+    border-radius: 0 4px 4px 0;
+  }
+
+  .sidebar-nav-item-staff.active {
+    background: rgba(59, 130, 246, 0.12);
+    color: #93c5fd;
+    border: 1px solid rgba(59, 130, 246, 0.22);
+  }
+
+  .sidebar-nav-item-staff.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 25%;
+    height: 50%;
+    width: 3px;
+    background: #3b82f6;
+    border-radius: 0 4px 4px 0;
+  }
+
   /* Stat card */
   .stat-card {
     background: #0d0d0f;

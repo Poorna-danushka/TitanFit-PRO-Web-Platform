@@ -15,7 +15,16 @@ const membershipSchema = new mongoose.Schema(
     planId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'MembershipPlan',
-      required: true,
+      required: false,
+    },
+    packageId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Package',
+      required: false,
+    },
+    trainerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
     },
     startDate: { type: Date, required: true, default: Date.now },
     endDate: { type: Date, required: true },
@@ -27,6 +36,11 @@ const membershipSchema = new mongoose.Schema(
     },
     autoRenew: { type: Boolean, default: true },
     paymentId: mongoose.Schema.Types.ObjectId,
+    paymentStatus: {
+      type: String,
+      enum: ['PAID', 'PENDING', 'FAILED', 'REFUNDED', 'CANCELLED'],
+      default: 'PAID',
+    },
     classesUsedThisMonth: { type: Number, default: 0 },
     ptSessionsUsedThisMonth: { type: Number, default: 0 },
     freezeStartDate: { type: Date },

@@ -111,16 +111,16 @@ export async function buildDatabaseContext(userId, userRole = 'MEMBER', queryTex
 
       // Personal Training Bookings
       const ptBookings = await PersonalTrainingBooking.find({ memberId: userId })
-        .sort({ date: 1 })
+        .sort({ sessionDate: 1, startTime: 1 })
         .populate({ path: 'trainerId', select: 'firstName lastName name email' })
         .lean();
 
       context.personalTraining = {
         totalBooked: ptBookings.length,
-        upcoming: ptBookings.filter(b => new Date(b.date) >= new Date()).map(b => ({
+        upcoming: ptBookings.filter(b => new Date(b.sessionDate) >= new Date()).map(b => ({
           trainer: b.trainerId ? `${b.trainerId.firstName || ''} ${b.trainerId.lastName || ''}`.trim() || b.trainerId.name : 'Assigned Trainer',
-          date: new Date(b.date).toISOString().split('T')[0],
-          timeSlot: b.timeSlot,
+          date: b.sessionDate ? new Date(b.sessionDate).toISOString().split('T')[0] : null,
+          timeSlot: b.startTime ? (b.endTime ? `${b.startTime} - ${b.endTime}` : b.startTime) : null,
           status: b.status,
         })),
       };

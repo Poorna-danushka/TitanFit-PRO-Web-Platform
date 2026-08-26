@@ -1,9 +1,13 @@
 import PersonalTrainingPackage from '../models/PersonalTrainingPackage.js';
 import PersonalTrainingBooking from '../models/PersonalTrainingBooking.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
-import { NotFoundError, ConflictError } from '../utils/errors.js';
+import { NotFoundError } from '../utils/errors.js';
 import logger from '../utils/logger.js';
 import { HTTP_STATUS, SUCCESS_MESSAGES } from '../constants/index.js';
+import {
+  bookTrainerSession,
+  cancelTrainerBooking,
+} from './trainerController.js';
 
 /**
  * Get all personal training packages
@@ -126,51 +130,25 @@ export const deletePackage = asyncHandler(async (req, res) => {
 });
 
 /**
- * Book personal training session
+ * Book personal training session (Unified with trainerController)
  * POST /api/v1/personal-training/bookings
  */
-export const bookSession = asyncHandler(async (req, res) => {
-  const { packageId, trainerId, sessionDate, startTime, endTime } = req.body;
-
-  const pkg = await PersonalTrainingPackage.findById(packageId);
-  if (!pkg) {
-    throw new NotFoundError('Personal Training Package');
-  }
-
-  const booking = new PersonalTrainingBooking({
-    userId: req.userId,
-    packageId,
-    trainerId,
-    sessionDate,
-    startTime,
-    endTime,
-    status: 'CONFIRMED',
-  });
-
-  await booking.save();
-
-  logger.info(`Personal training session booked: ${booking._id}`);
-
-  res.status(HTTP_STATUS.CREATED).json({
-    success: true,
-    message: 'Session booked successfully',
-    data: booking,
-  });
-});
+export const bookSession = bookTrainerSession;
 
 /**
  * Get my personal training bookings
  * GET /api/v1/personal-training/my-bookings
  */
 export const getMyBookings = asyncHandler(async (req, res) => {
-  const bookings = await PersonalTrainingBooking.find({ userId: req.userId })
+  const bookings = await PersonalTrainingBooking.find({ memberId: req.userId })
     .populate('packageId')
-    .populate('trainerId', 'firstName lastName email')
-    .sort({ sessionDate: 1 });
+    .populate('trainerId', 'firstName lastName email profileImage')
+    .sort({ sessionDate: -1, startTime: -1 });
 
   res.status(HTTP_STATUS.OK).json({
     success: true,
     data: bookings,
+    bookings,
   });
 });
 
@@ -183,7 +161,7 @@ export const getTrainerBookings = asyncHandler(async (req, res) => {
   const skip = (page - 1) * limit;
 
   const bookings = await PersonalTrainingBooking.find({ trainerId: req.userId })
-    .populate('userId', 'firstName lastName email')
+    .populate('memberId', 'firstName lastName email profileImage')
     .populate('packageId')
     .skip(skip)
     .limit(parseInt(limit))
@@ -204,27 +182,7 @@ export const getTrainerBookings = asyncHandler(async (req, res) => {
 });
 
 /**
- * Cancel personal training booking
+ * Cancel personal training booking (Unified with trainerController)
  * DELETE /api/v1/personal-training/bookings/:bookingId
  */
-export const cancelBooking = asyncHandler(async (req, res) => {
-  const { bookingId } = req.params;
-
-  const booking = await PersonalTrainingBooking.findOneAndUpdate(
-    { _id: bookingId, userId: req.userId },
-    { status: 'CANCELLED', cancelledAt: new Date() },
-    { new: true }
-  );
-
-  if (!booking) {
-    throw new NotFoundError('Booking');
-  }
-
-  logger.info(`Personal training booking cancelled: ${bookingId}`);
-
-  res.status(HTTP_STATUS.OK).json({
-    success: true,
-    message: 'Booking cancelled successfully',
-    data: booking,
-  });
-});
+export const cancelBooking = cancelTrainerBooking;

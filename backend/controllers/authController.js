@@ -515,10 +515,10 @@ export const logout = asyncHandler(async (req, res) => {
 export const changePassword = asyncHandler(async (req, res) => {
   const { currentPassword, newPassword } = req.body;
 
-  if (!currentPassword || !newPassword) {
+  if (!newPassword) {
     return res.status(400).json({
       success: false,
-      message: 'Both current password and new password are required.',
+      message: 'New password is required.',
     });
   }
 
@@ -526,13 +526,6 @@ export const changePassword = asyncHandler(async (req, res) => {
     return res.status(400).json({
       success: false,
       message: 'New password must be at least 8 characters long.',
-    });
-  }
-
-  if (currentPassword === newPassword) {
-    return res.status(400).json({
-      success: false,
-      message: 'New password must be different from your current temporary password.',
     });
   }
 
@@ -544,11 +537,38 @@ export const changePassword = asyncHandler(async (req, res) => {
     });
   }
 
-  const isMatch = await user.matchPassword(currentPassword);
-  if (!isMatch) {
+  // If this is a standard password change (not first-time forced change), verify currentPassword
+  if (!user.mustChangePassword) {
+    if (!currentPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Current password is required.',
+      });
+    }
+
+    const isMatch = await user.matchPassword(currentPassword);
+    if (!isMatch) {
+      return res.status(400).json({
+        success: false,
+        message: 'Current password is incorrect.',
+      });
+    }
+  } else if (currentPassword) {
+    const isMatch = await user.matchPassword(currentPassword);
+    if (!isMatch) {
+      return res.status(400).json({
+        success: false,
+        message: 'Current temporary password is incorrect.',
+      });
+    }
+  }
+
+  // Prevent reusing the exact same temporary password
+  const isSameAsOld = await user.matchPassword(newPassword);
+  if (isSameAsOld) {
     return res.status(400).json({
       success: false,
-      message: 'Current password is incorrect.',
+      message: 'New password must be different from your temporary password.',
     });
   }
 

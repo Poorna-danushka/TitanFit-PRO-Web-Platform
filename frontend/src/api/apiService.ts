@@ -118,7 +118,7 @@ export const authAPI = {
     }),
   deleteGalleryImage: (imageId: string) =>
     api.delete(`/auth/gallery/${imageId}`),
-  changePassword: (currentPassword: string, newPassword: string) =>
+  changePassword: (newPassword: string, currentPassword?: string) =>
     api.put('/auth/change-password', { currentPassword, newPassword }),
   requestPasswordReset: (email: string) =>
     api.post('/auth/forgot-password', { email }),
@@ -275,12 +275,32 @@ export const classAPI = {
 // ─── Trainers & PT API ─────────────────────────────────────────────────────────
 
 export const trainerAPI = {
-  getAll: () => api.get('/trainers'),
+  getAll: (params?: { search?: string; specialization?: string }) => api.get('/trainers', { params }),
   getById: (id: string) => api.get(`/trainers/${id}`),
-  getAvailability: (trainerId: string) => api.get(`/trainers/${trainerId}/availability`),
-  bookSession: (data: { trainerId: string; packageType?: string; date: string; timeSlot: string }) => api.post('/personal-training/bookings', data),
-  getMyPTBookings: () => api.get('/personal-training/my-bookings'),
+  getEligibility: () => api.get('/trainers/eligibility'),
+  selectTrainer: (trainerId: string) => api.post('/trainers/select', { trainerId }),
+  getMyTrainer: () => api.get('/trainers/my-trainer'),
+  getAvailability: (trainerId: string, date?: string) => api.get(`/trainers/${trainerId}/availability`, { params: { date } }),
+  getWeeklySlots: (trainerId: string, date?: string) => api.get(`/trainers/${trainerId}/weekly-slots`, { params: { date } }),
+  bookSession: (data: { trainerId: string; date?: string; sessionDate?: string; timeSlot?: string; startTime?: string; endTime?: string; focusArea?: string; notes?: string }) =>
+    api.post('/trainers/book', data),
+  multiBookSessions: (data: { trainerId: string; sessions: Array<{ date?: string; sessionDate?: string; dayOfWeek?: number; recurring?: boolean; timeSlot?: string; startTime?: string; endTime?: string; focusArea?: string; notes?: string }> }) =>
+    api.post('/trainers/multi-book', data),
+  cancelBooking: (bookingId: string) => api.delete(`/trainers/bookings/${bookingId}`),
+  // Cancel all future occurrences of a recurring weekly slot selection
+  cancelRecurringSlot: (recurringSlotId: string) => api.delete(`/trainers/recurring-slots/${recurringSlotId}`),
+  updateBookingStatus: (bookingId: string, status: string) => api.patch(`/trainers/bookings/${bookingId}/status`, { status }),
+  getMyBookings: () => api.get('/trainers/my-bookings'),
+
+  // Coach Portal APIs
+  getCoachWeeklyAvailability: () => api.get('/trainers/weekly-availability'),
+  updateCoachWeeklyAvailability: (schedule: Array<{ dayOfWeek: number; isAvailable: boolean; startTime: string; endTime: string }>) =>
+    api.put('/trainers/weekly-availability', { schedule }),
+  getCoachTrainingSpace: () => api.get('/trainers/training-space'),
+  getProfile: () => api.get('/trainers/profile'),
+  updateProfile: (data: unknown) => api.put('/trainers/profile', data),
 };
+
 
 // ─── Attendance & QR API ───────────────────────────────────────────────────────
 

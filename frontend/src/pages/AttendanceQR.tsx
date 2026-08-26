@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { attendanceAPI } from '../api/apiService';
+import { attendanceAPI, purchaseAPI } from '../api/apiService';
 import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
-import { QrCode, Scan, CheckCircle2, History, ShieldCheck, Clock } from 'lucide-react';
+import { QrCode, Scan, CheckCircle2, History, ShieldCheck, Clock, AlertCircle, Building2, ArrowRight } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { Link } from 'react-router-dom';
 
 export default function AttendanceQR() {
   const { user } = useAuth();
@@ -12,6 +13,8 @@ export default function AttendanceQR() {
   const [loading, setLoading] = useState(true);
   const [scanInput, setScanInput] = useState('');
   const [scanLoading, setScanLoading] = useState(false);
+  const [isPendingVerification, setIsPendingVerification] = useState(false);
+  const [hasActivePass, setHasActivePass] = useState(false);
 
   const isStaff = user?.role === 'admin' || (user as any)?.role === 'STAFF' || (user as any)?.role === 'TRAINER';
 
@@ -22,14 +25,33 @@ export default function AttendanceQR() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [qrRes, histRes] = await Promise.all([
-        attendanceAPI.getQRCode().catch(() => ({ data: {} })),
+      const [qrRes, histRes, purchaseRes] = await Promise.all([
+        attendanceAPI.getQRCode().catch((err) => ({ error: err })),
         attendanceAPI.getMyHistory().catch(() => ({ data: {} })),
+        purchaseAPI.getMy().catch(() => ({ data: {} })),
       ]);
 
-      const qrDataPayload = qrRes.data?.data?.qrCodeData || qrRes.data?.qrCodeData || `GYM_MEMBER_${user?.id || 'DEMO'}`;
-      setQrCodeData(qrDataPayload);
-      setHistory(histRes.data?.history || histRes.data?.data || []);
+      const purchases = (purchaseRes as any).data?.purchases || [];
+      const pendingPurchases = (purchaseRes as any).data?.pendingPurchases || purchases.filter(
+        (p: any) => ['pending_approval', 'pending_verification', 'pending'].includes(p.status) && p.paymentMethod === 'bank_transfer'
+      );
+
+      if ((qrRes as any).data?.success && ((qrRes as any).data?.data?.qrCodeData || (qrRes as any).data?.qrCodeData)) {
+        setQrCodeData((qrRes as any).data?.data?.qrCodeData || (qrRes as any).data?.qrCodeData);
+        setHasActivePass(true);
+        setIsPendingVerification(false);
+      } else {
+        setHasActivePass(false);
+        const errCode = (qrRes as any).error?.response?.data?.code;
+        const errMsg = (qrRes as any).error?.response?.data?.message;
+        if (errCode === 'PENDING_VERIFICATION' || (errMsg && errMsg.includes('awaiting administrator verification')) || pendingPurchases.length > 0) {
+          setIsPendingVerification(true);
+        } else {
+          setIsPendingVerification(false);
+        }
+      }
+
+      setHistory((histRes as any).data?.history || (histRes as any).data?.data || []);
     } catch (error) {
       toast.error('Failed to load attendance records');
     } finally {
@@ -72,28 +94,74 @@ export default function AttendanceQR() {
           className="card-surface rounded-2xl p-6 border border-white/[0.08] flex flex-col items-center text-center justify-between"
         >
           <div className="w-full">
-            <div className="flex items-center justify-between mb-4 text-xs">
-              <span className="font-bold text-green-400 uppercase tracking-wider flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4" /> Active Member Pass
-              </span>
-              <span className="px-2.5 py-0.5 rounded-full bg-green-500/10 text-green-400 border border-green-500/20 font-semibold">
-                VALID
-              </span>
-            </div>
+            {hasActivePass ? (
+              <>
+                <div className="flex items-center justify-between mb-4 text-xs">
+                  <span className="font-bold text-green-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4" /> Active Member Pass
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded-full bg-green-500/10 text-green-400 border border-green-500/20 font-semibold">
+                    VALID
+                  </span>
+                </div>
 
-            <h3 className="text-xl font-bold text-white mb-1">{user?.name}</h3>
-            <p className="text-xs text-gray-400 mb-6">{user?.email}</p>
+                <h3 className="text-xl font-bold text-white mb-1">{user?.name}</h3>
+                <p className="text-xs text-gray-400 mb-6">{user?.email}</p>
 
-            {/* QR Code Container */}
-            <div className="bg-white p-6 rounded-2xl inline-block shadow-2xl shadow-green-500/10 border-4 border-green-500/20 my-2">
-              <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrCodeData)}`}
-                alt="Member Entry QR Pass"
-                className="w-44 h-44 object-contain"
-              />
-            </div>
+                {/* QR Code Container */}
+                <div className="bg-white p-6 rounded-2xl inline-block shadow-2xl shadow-green-500/10 border-4 border-green-500/20 my-2">
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrCodeData)}`}
+                    alt="Member Entry QR Pass"
+                    className="w-44 h-44 object-contain"
+                  />
+                </div>
 
-            <p className="text-[11px] text-gray-500 mt-4">Show this QR code to reception scanner to record entry/exit.</p>
+                <p className="text-[11px] text-gray-500 mt-4">Show this QR code to reception scanner to record entry/exit.</p>
+              </>
+            ) : isPendingVerification ? (
+              <div className="py-6 space-y-4 text-left">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="px-2.5 py-0.5 bg-amber-500/20 text-amber-400 text-[10px] font-extrabold uppercase rounded-full border border-amber-500/30 flex items-center gap-1">
+                    <Building2 className="w-3 h-3" /> Payment Pending Verification
+                  </span>
+                </div>
+                <h3 className="text-xl font-bold text-amber-200">
+                  Attendance Pass Pending Verification
+                </h3>
+                <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl text-xs text-amber-300 space-y-2">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                    <p className="font-semibold">Your bank transfer is awaiting administrator verification.</p>
+                  </div>
+                  <p className="text-gray-300">
+                    Your digital entry pass will be activated automatically once an administrator approves your bank transfer payment.
+                  </p>
+                </div>
+                <Link
+                  to="/my-package"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold rounded-xl transition-all shadow-md shadow-amber-500/20"
+                >
+                  View Transfer Status <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            ) : (
+              <div className="py-8 space-y-4">
+                <div className="w-16 h-16 rounded-full bg-white/5 mx-auto flex items-center justify-center text-gray-500">
+                  <Clock className="w-8 h-8" />
+                </div>
+                <h3 className="text-lg font-bold text-white">Active Membership Required</h3>
+                <p className="text-xs text-gray-400 max-w-xs mx-auto">
+                  You need an active gym membership plan to generate a digital entry QR pass.
+                </p>
+                <Link
+                  to="/packages"
+                  className="inline-block px-6 py-2.5 bg-green-500 hover:bg-green-400 text-black text-xs font-bold rounded-xl transition-all shadow-md shadow-green-500/20"
+                >
+                  Browse Packages
+                </Link>
+              </div>
+            )}
           </div>
         </motion.div>
 

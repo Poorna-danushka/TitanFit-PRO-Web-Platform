@@ -6,6 +6,7 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
 import logger from '../utils/logger.js';
 import { HTTP_STATUS } from '../constants/index.js';
+import { checkUserMembershipStatus } from '../utils/membershipHelper.js';
 
 /**
  * Generate or get QR code for member
@@ -15,6 +16,26 @@ export const generateQRCode = asyncHandler(async (req, res) => {
   const user = await User.findById(req.userId);
   if (!user) {
     throw new NotFoundError('User');
+  }
+
+  // Validate active membership if not staff/admin
+  const isPrivileged = ['admin', 'ADMIN', 'SYSTEM_ADMIN', 'STAFF', 'TRAINER'].includes(user.role);
+  if (!isPrivileged) {
+    const membershipStatus = await checkUserMembershipStatus(req.userId);
+    if (!membershipStatus.hasActiveMembership) {
+      if (membershipStatus.isPendingVerification) {
+        return res.status(HTTP_STATUS.FORBIDDEN).json({
+          success: false,
+          code: 'PENDING_VERIFICATION',
+          message: 'Your bank transfer is awaiting administrator verification.',
+        });
+      }
+      return res.status(HTTP_STATUS.FORBIDDEN).json({
+        success: false,
+        code: 'MEMBERSHIP_REQUIRED',
+        message: 'Active membership required for gym attendance.',
+      });
+    }
   }
 
   let qrCodeRecord = await MemberQRCode.findOne({ memberId: req.userId });
@@ -57,6 +78,26 @@ export const getMyQRCode = asyncHandler(async (req, res) => {
   const user = await User.findById(req.userId);
   if (!user) {
     throw new NotFoundError('User');
+  }
+
+  // Validate active membership if not staff/admin
+  const isPrivileged = ['admin', 'ADMIN', 'SYSTEM_ADMIN', 'STAFF', 'TRAINER'].includes(user.role);
+  if (!isPrivileged) {
+    const membershipStatus = await checkUserMembershipStatus(req.userId);
+    if (!membershipStatus.hasActiveMembership) {
+      if (membershipStatus.isPendingVerification) {
+        return res.status(HTTP_STATUS.FORBIDDEN).json({
+          success: false,
+          code: 'PENDING_VERIFICATION',
+          message: 'Your bank transfer is awaiting administrator verification.',
+        });
+      }
+      return res.status(HTTP_STATUS.FORBIDDEN).json({
+        success: false,
+        code: 'MEMBERSHIP_REQUIRED',
+        message: 'Active membership required for gym attendance.',
+      });
+    }
   }
 
   const qrData = `GYM_MEMBER_${user._id}`;
@@ -122,6 +163,26 @@ export const scanQR = asyncHandler(async (req, res) => {
       success: false,
       message: 'Invalid QR Code or Member account not found.',
     });
+  }
+
+  // Validate active membership for gym access if user is not staff/admin
+  const isPrivileged = ['admin', 'ADMIN', 'SYSTEM_ADMIN', 'STAFF', 'TRAINER'].includes(user.role);
+  if (!isPrivileged) {
+    const membershipStatus = await checkUserMembershipStatus(user._id);
+    if (!membershipStatus.hasActiveMembership) {
+      if (membershipStatus.isPendingVerification) {
+        return res.status(HTTP_STATUS.FORBIDDEN).json({
+          success: false,
+          code: 'PENDING_VERIFICATION',
+          message: 'Your bank transfer is awaiting administrator verification.',
+        });
+      }
+      return res.status(HTTP_STATUS.FORBIDDEN).json({
+        success: false,
+        code: 'MEMBERSHIP_REQUIRED',
+        message: 'Member does not have an active membership.',
+      });
+    }
   }
 
   // Check if member is currently checked in (without checkout time)
