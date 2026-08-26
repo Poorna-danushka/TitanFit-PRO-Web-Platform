@@ -37,6 +37,10 @@ export const emailVerificationValidator = Joi.object({
   token: Joi.string().required(),
 }).unknown(false);
 
+export const forgotPasswordValidator = Joi.object({
+  email: Joi.string().email({ tlds: { allow: false } }).required().lowercase().trim(),
+}).unknown(true);
+
 // User Validators
 export const updateProfileValidator = Joi.object({
   name:         Joi.string().min(2).max(50).trim(),
@@ -67,33 +71,14 @@ export const changePasswordValidator = Joi.object({
   }),
 }).unknown(false);
 
-// Exercise Validators
-export const exerciseValidator = Joi.object({
-  name: Joi.string().required().trim(),
-  muscleGroup: Joi.string().required().trim(),
-  equipment: Joi.string().trim(),
-  difficulty: Joi.string().valid('Beginner', 'Intermediate', 'Advanced').required(),
-  caloriesPer10Min: Joi.number().positive().required(),
-  description: Joi.string().max(1000).trim(),
-}).unknown(false);
-
 // Package Validators
 export const packageValidator = Joi.object({
   name: Joi.string().required().trim(),
   price: Joi.number().positive().required(),
   duration: Joi.string().required().trim(),
   description: Joi.string().max(500).required().trim(),
-  exercises: Joi.array().items(Joi.string()).default([]),
 }).unknown(false);
 
-// Workout Validators
-export const workoutValidator = Joi.object({
-  exerciseId: Joi.string().required(),
-  duration: Joi.number().positive().required(),
-  sets: Joi.number().positive(),
-  reps: Joi.number().positive(),
-  date: Joi.date().max('now').required(),
-}).unknown(false);
 
 // Member Profile Validators
 export const membershipPurchaseValidator = Joi.object({

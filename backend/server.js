@@ -35,6 +35,7 @@ import attendanceRoutes from './routes/attendanceRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
+import backupRoutes from './routes/backupRoutes.js';
 
 const app = express();
 
@@ -93,6 +94,7 @@ app.use(`${apiPrefix}/attendance`, attendanceRoutes);
 app.use(`${apiPrefix}/ai`, aiRoutes);
 app.use(`${apiPrefix}/chat`, chatRoutes);
 app.use(`${apiPrefix}/admin`, adminRoutes);
+app.use(`${apiPrefix}/admin`, backupRoutes);
 
 // ============ Error Handling ============
 app.use(notFoundHandler);
@@ -116,12 +118,32 @@ const startServer = async () => {
     }
 
     // Start listening
-    app.listen(PORT, () => {
+    app.listen(PORT, async () => {
       logger.info(`🚀 Server running on http://localhost:${PORT}`);
       logger.info(`📚 API Documentation:`);
+
+      // Start backup scheduler if enabled
+      try {
+        const { startBackupScheduler } = await import('./services/backupScheduler.js');
+        const schedulerEnabled = (process.env.BACKUP_SCHEDULER_ENABLED || 'true').toLowerCase() !== 'false';
+        if (schedulerEnabled) {
+          startBackupScheduler({ runOnStart: (process.env.BACKUP_SCHEDULER_RUN_ON_START || 'false') === 'true' });
+        } else {
+          logger.info('Backup scheduler disabled via BACKUP_SCHEDULER_ENABLED=false');
+        }
+      } catch (err) {
+        logger.warn('Backup scheduler not started: ' + err.message);
+      }
+
+      // Start Plan Expiration Email & Notification Scheduler
+      try {
+        const { startPlanExpirationScheduler } = await import('./services/planExpirationScheduler.js');
+        startPlanExpirationScheduler({ runOnStart: (process.env.EXPIRATION_SCHEDULER_RUN_ON_START || 'true') === 'true' });
+      } catch (err) {
+        logger.warn('Plan expiration scheduler not started: ' + err.message);
+      }
       logger.info(`  - Auth: POST ${apiPrefix}/auth/register, /auth/login, GET /auth/me`);
       logger.info(`  - Payments: POST ${apiPrefix}/payments/intent, /payments/subscribe`);
-      logger.info(`  - Exercises: GET ${apiPrefix}/exercises`);
       logger.info(`  - Packages: GET/POST ${apiPrefix}/packages`);
       logger.info(`  - Memberships: GET ${apiPrefix}/memberships/plans`);
       logger.info(`  - Trainers: GET ${apiPrefix}/trainers`);

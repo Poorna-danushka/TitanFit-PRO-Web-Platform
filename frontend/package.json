@@ -9,7 +9,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@sentry/react": "^7.89.0",
     "@stripe/react-stripe-js": "^2.1.0",
     "@stripe/stripe-js": "^1.46.0",
     "axios": "latest",
@@ -17,7 +16,6 @@
     "lucide-react": "^1.17.0",
     "react": "latest",
     "react-dom": "latest",
-    "react-is": "^19.2.6",
     "react-router-dom": "latest",
     "react-toastify": "^9.1.0",
     "recharts": "^3.8.1",
