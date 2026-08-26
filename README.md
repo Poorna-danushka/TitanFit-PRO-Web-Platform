@@ -1,367 +1,273 @@
-# 🏋️ GymFit Pro - Full Stack Gym Management System
+# 🏋️ TitanFit Pro - Enterprise Gym & Fitness Management System
 
-A complete full-stack web application for gym management and workout tracking, built with React, Node.js, Express, and MongoDB.
+**TitanFit Pro** is a modern, enterprise-grade full-stack gym management platform engineered with React 19, TypeScript, Node.js (ES Modules), Express, MongoDB Atlas, AWS S3, and Google Gemini AI.
 
-## 🎯 Features
+The platform delivers end-to-end gym operations: multi-role role-based access control (RBAC), package and membership purchasing with Stripe and bank transfers, 1-on-1 personal trainer weekly slot scheduling, digital attendance QR scanning, automated database backups with AWS S3 encryption, automated plan expiration notifications, and AI health assistant capabilities.
 
-✅ **User Authentication**
-- Register and login with JWT
-- Secure password hashing with bcrypt
-- Protected routes
+---
 
-✅ **Gym Exercise Library**
-- Pre-loaded 6 exercises with detailed information
-- Filter and search exercises
-- Track muscle groups and equipment
+## 🚀 Key Modules & Business Logics
 
-✅ **Workout Tracking**
-- Log workouts with exercise, duration, sets, and reps
-- Automatic calorie calculation
-- View workout history
-- Edit and delete workouts
+### 1. 🔐 Multi-Role Access Control (RBAC)
+The application enforces strict role-based authorization across 5 system roles:
+- **SYSTEM_ADMIN**: Platform superuser with full access to backup/recovery settings, system logs, role promotion, and user management.
+- **ADMIN**: Gym management access to packages, purchases, member directories, bank transfer approvals, and announcement broadcasts.
+- **TRAINER**: Access to Coach Portal, weekly availability management, trainee assignments, and personal training session bookings.
+- **STAFF**: Reception counter interface for manual member attendance check-ins and member verification.
+- **MEMBER**: Customer portal for purchasing packages, booking personal trainer slots, generating attendance QR passes, chatting with AI assistant, and tracking membership status.
 
-✅ **User Dashboard**
-- Welcome message with user stats
-- Total workouts and calories burned
-- Weekly progress tracking
+### 2. 💳 Package, Membership & Payment Processing
+- **Package Purchasing**: Members can buy individual or family membership packages.
+- **Payment Methods**: Supports instant online card payments via **Stripe** and manual **Bank Transfer** slip uploads.
+- **Admin Approval Workflow**: Bank transfer payments enter a pending verification state until an Administrator approves or rejects the payment reference and slip image.
+- **Family Member Entitlements**: Package purchases support attaching family member profiles under a single primary billing account.
 
-✅ **User Profile**
-- Update personal information
-- Track weight and height
-- Calculate BMI
-- View member since date
+### 3. 📅 Personal Trainer (PT) Weekly Scheduling Engine
+- **Coach Availability Rules**: Coaches configure their weekly recurring schedule (days of week, start/end hours).
+- **Plan Entitlement Verification**: Only members with packages having `hasPersonalTrainer: true` or active PT session quotas are eligible to select and book a trainer.
+- **Strict 1-on-1 Isolation**: Confirmed bookings lock out the coach slot across all members to prevent double booking.
+- **4-Session Weekly Quota**: Members are capped at booking a maximum of 4 personal training sessions per calendar week (Monday to Sunday).
+- **Slot Release on Cancellation**: Cancelling a booking immediately frees the slot and restores the member's weekly session quota.
+- **Atomic Operations**: Multi-booking sessions execute within MongoDB transactions for rollback safeguard on partial failure.
 
-✅ **Responsive UI**
-- Tailwind CSS styling
-- Mobile-friendly design
-- Professional look and feel
+### 4. 🪪 Digital Attendance & QR Scanner
+- **Member QR Generation**: Members generate a dynamic digital pass containing their encrypted member ID.
+- **Reception Scanner / Check-In**: Staff scan the member QR code or perform manual member lookup to log entry timestamps.
+- **Check-Out & Duration**: Tracks check-out times, total gym session duration, and daily peak capacity stats.
 
-## 🔐 Backup & Recovery with AWS S3
+### 5. 🤖 Context-Aware AI Health Assistant (Google Gemini 1.5 Flash)
+- **Database RAG Integration**: Built-in `aiContextService` fetches the member's profile data, active package, assigned coach, upcoming PT bookings, and gym schedules.
+- **Intelligent Counseling**: The Gemini 1.5 Flash AI provides personalized nutrition advice, workout tips, and gym policy guidance based on real member context.
+- **Conversation Persistence**: Chat history is persisted per user in MongoDB (`AIConversation` & `AIMessage` models).
 
-The backend includes a full MongoDB backup and restore workflow that stores compressed database archives in AWS S3 using server-side encryption and SHA-256 checksum validation.
+### 6. 🛡️ AWS S3 Automated Database Backup & Disaster Recovery
+- **Dual Storage Engine**: Backs up MongoDB databases to AWS S3 using `@aws-sdk/client-s3` or local encrypted archives.
+- **Compression & Encryption**: Produces gzip-compressed binary database dumps (`mongodump --archive --gzip`) encrypted with S3 Server-Side Encryption (`AES256`).
+- **Integrity Validation**: Computes SHA-256 checksums on creation and validates checksum integrity before executing restores (`mongorestore`).
+- **Automated Cron Scheduler**: Integrated `backupScheduler` runs recurring daily/weekly/monthly backups with configurable retention cleanup (e.g. automatically purging backups older than 30 days).
+- **Admin Portal**: Dedicated admin screen ([BackupSettings.tsx](file:///c:/Users/poorn/OneDrive/Desktop/fitness_app/frontend/src/pages/admin/BackupSettings.tsx)) for manual backup triggers, one-click database restores, and scheduler configuration.
 
-Required backend env variables:
+### 7. ⏰ Plan Expiration & Renewal Notification System
+- **Automated Expiration Check**: Daily cron job (`planExpirationScheduler.js`) identifies memberships expiring within 3 days or recently completed.
+- **Personalized Email Notifications**: Sends styled HTML emails detailing the member's completing plan, exact completion date, and recommendations for active renewal packages.
+- **In-App Alerts**: Automatically dispatches warning notifications to the member's in-app notification inbox.
 
-```env
-AWS_REGION=us-east-1
-AWS_ACCESS_KEY_ID=your_aws_access_key_id
-AWS_SECRET_ACCESS_KEY=your_aws_secret_access_key
-AWS_S3_BUCKET_NAME=your-fitness-backup-bucket
-AWS_S3_PREFIX=database-backups
-AWS_S3_SERVER_SIDE_ENCRYPTION=AES256
-BACKUP_RETENTION_DAYS=30
-```
+### 8. 🔑 Forgot Password OTP & Mandatory Password Change
+- **Password Reset Request**: Users enter their registered email on the login screen to request a temporary One-Time Password (OTP).
+- **OTP Generation & Dispatch**: Backend generates a secure temporary OTP (e.g. `GF-8X4K2P`), sets `mustChangePassword: true`, and emails the OTP to the user.
+- **Enforced First-Login Redirect**: Logging in with a temporary OTP returns `user.mustChangePassword: true`, triggering an automatic route guard redirect to `/force-change-password`.
+- **Password Upgrade**: The user sets a new permanent password meeting all security rules (8+ chars, uppercase, lowercase, digits, special characters), clearing `mustChangePassword` upon success.
 
-Admin API endpoints:
+---
 
-- GET /api/v1/admin/backups/config
-- GET /api/v1/admin/backups
-- POST /api/v1/admin/backups/create
-- POST /api/v1/admin/backups/restore
-
-The dump files are produced with `mongodump --archive --gzip` and uploaded with S3 server-side encryption, while each backup is verified by SHA-256 checksums before restore.
-
-## 🛠️ Tech Stack
+## 🛠️ Technology Stack
 
 ### Backend
-- **Node.js** - JavaScript runtime
-- **Express.js** - Web framework
-- **MongoDB** - NoSQL database
-- **Mongoose** - ODM for MongoDB
-- **JWT** - Authentication
-- **bcryptjs** - Password hashing
-- **CORS** - Cross-origin resource sharing
+- **Node.js (v18+)** — Native ES Modules (`"type": "module"`)
+- **Express.js** — RESTful API web framework
+- **MongoDB Atlas & Mongoose ODM** — NoSQL database with Schema validation & Indexes
+- **AWS SDK v3 (`@aws-sdk/client-s3`)** — Cloud Object Storage for Database Backups
+- **Google Generative AI API** — Gemini 1.5 Flash model integration
+- **Nodemailer** — SMTP email dispatch service
+- **Stripe Node SDK** — Payment processing
+- **BcryptJS & JSONWebToken** — Password hashing & JWT authentication
+- **Winston** — Production logging engine
+- **Joi & Password-Validator** — Input validation & password complexity rules
 
 ### Frontend
-- **React 18** - UI library
-- **Vite** - Build tool
-- **React Router** - Navigation
-- **Axios** - HTTP client
-- **Tailwind CSS** - Styling
+- **React 19** — User interface library
+- **TypeScript** — Static type safety
+- **Vite 8** — Next-generation frontend build tool
+- **Tailwind CSS v4** — Modern utility-first styling with custom dark theme tokens
+- **Framer Motion** — Smooth page transitions and modal animations
+- **Lucide React** — Icon suite
+- **Axios** — HTTP client with request/response interceptors
+- **Recharts** — Admin analytics graphs
 
-## 📁 Project Structure
+---
 
-```
+## 🔒 Security Infrastructure
+
+- **HTTP-Only Cookies**: Access tokens (15-min TTL) and refresh tokens (7-day TTL) stored in HTTP-Only, SameSite cookies.
+- **Double-Submit CSRF Protection**: `XSRF-TOKEN` cookie validated against `X-CSRF-Token` request headers on mutating HTTP requests (`POST`, `PUT`, `DELETE`).
+- **Token Blacklisting**: Logout immediately invalidates tokens in `TokenBlacklist` collection.
+- **Brute-Force Account Protection**: Locks user accounts for 30 minutes after 5 consecutive failed login attempts.
+- **Rate Limiting**: Public auth routes are protected by `express-rate-limit`.
+- **Security Headers**: Configured with `helmet` and strict CORS policies.
+
+---
+
+## 📁 Repository Directory Structure
+
+```text
 fitness_app/
 ├── backend/
-│   ├── models/
-│   │   ├── User.js
-│   │   ├── Exercise.js
-│   │   └── Workout.js
-│   ├── controllers/
-│   │   ├── authController.js
-│   │   ├── exerciseController.js
-│   │   └── workoutController.js
-│   ├── routes/
-│   │   ├── authRoutes.js
-│   │   ├── exerciseRoutes.js
-│   │   └── workoutRoutes.js
-│   ├── middleware/
-│   │   └── auth.js
-│   ├── seed/
-│   │   └── seedExercises.js
-│   ├── server.js
-│   ├── package.json
-│   └── .env.example
+│   ├── config/              # MongoDB connection & Cloudinary config
+│   ├── constants/           # Enums & success/error messages
+│   ├── controllers/         # API Controllers (auth, admin, trainer, etc.)
+│   ├── middleware/          # Auth, CSRF, rate limiter & error handler
+│   ├── models/              # Mongoose Schemas (User, Membership, BackupSetting, etc.)
+│   ├── routes/              # Express API Routes
+│   ├── scripts/             # Admin seeding & reset utility scripts
+│   ├── seed/                # Initial database seeders
+│   ├── services/            # Business logic (backupService, aiService, paymentService, etc.)
+│   ├── tests/               # Integration & unit test suite
+│   ├── utils/               # Logger, email transporter, JWT helpers
+│   ├── validators/          # Joi input validation schemas
+│   ├── server.js            # Express application entry point
+│   └── package.json
 │
 ├── frontend/
+│   ├── public/              # Static assets
 │   ├── src/
-│   │   ├── api/
-│   │   │   └── apiService.ts
-│   │   ├── pages/
-│   │   │   ├── Login.tsx
-│   │   │   ├── Register.tsx
-│   │   │   ├── Dashboard.tsx
-│   │   │   ├── Exercises.tsx
-│   │   │   ├── Workouts.tsx
-│   │   │   └── Profile.tsx
-│   │   ├── App.tsx
-│   │   ├── main.tsx
-│   │   └── index.css
+│   │   ├── api/             # Axios instance & unified API service (`apiService.ts`)
+│   │   ├── components/      # Layouts, Navbar, Sidebars, Protected Routes
+│   │   ├── context/         # AuthContext & state providers
+│   │   ├── hooks/           # Custom React hooks (useNotifications, useUI)
+│   │   ├── pages/           # Application views (Dashboard, Trainers, Login, Admin, etc.)
+│   │   ├── utils/           # Input sanitization & security helpers
+│   │   ├── App.tsx          # Router configuration & route guards
+│   │   └── main.tsx         # React root mounting
 │   ├── index.html
 │   ├── vite.config.ts
 │   ├── tailwind.config.js
-│   ├── tsconfig.json
-│   ├── package.json
-│   └── .gitignore
+│   └── package.json
 │
 └── README.md
 ```
 
-## 🚀 Getting Started
+---
 
-### Prerequisites
-- Node.js (v14+)
-- MongoDB (local or Atlas)
-- npm or yarn
+## ⚙️ Environment Variables Setup
 
-### Backend Setup
+### Backend Environment (`backend/.env`)
 
-1. **Navigate to backend directory**
-   ```bash
-   cd backend
-   ```
+```env
+# Database
+MONGODB_URI=mongodb+srv://<user>:<password>@cluster.mongodb.net/gymfit-pro?retryWrites=true&w=majority
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
+# JWT & Security
+JWT_SECRET=your_secure_jwt_secret_min_32_chars
+JWT_REFRESH_SECRET=your_secure_jwt_refresh_secret_min_32_chars
+BCRYPT_SALT_ROUNDS=10
 
-3. **Create .env file**
-   ```bash
-   cp .env.example .env
-   ```
-   
-   Update `.env` with your MongoDB URI and JWT secrets:
-   ```
-   MONGODB_URI=mongodb://localhost:27017/gymfit-pro
-   JWT_SECRET=your_jwt_secret_key_here
-   JWT_REFRESH_SECRET=your_jwt_refresh_secret_key_here
-   PORT=5000
-   NODE_ENV=development
-   ```
+# Server Configuration
+PORT=5000
+NODE_ENV=development
+LOG_LEVEL=info
+CORS_ORIGIN=http://localhost:3000
+FRONTEND_URL=http://localhost:3000
 
-4. **Seed exercises to database**
-   ```bash
-   npm run seed
-   ```
+# Email (SMTP) Configuration
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=your_email@gmail.com
+SMTP_PASS=your_app_password
 
-5. **Start the server**
-   ```bash
-   npm run dev
-   ```
-   
-   Server will run on `http://localhost:5000`
+# Stripe Payments
+STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key
+STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key
 
-### Frontend Setup
+# Cloudinary Image Storage
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
 
-1. **Navigate to frontend directory**
-   ```bash
-   cd frontend
-   ```
+# AI Assistant Configuration
+AI_MODEL=gemini-1.5-flash
+AI_BASE_URL=https://generativelanguage.googleapis.com/v1beta
+GEMINI_API_KEY=your_gemini_api_key
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Start the development server**
-   ```bash
-   npm run dev
-   ```
-   
-   Frontend will run on `http://localhost:3000`
-
-## 🔗 API Endpoints
-
-### Authentication
-- `POST /api/auth/register` - Register a new user
-- `POST /api/auth/login` - Login user
-- `GET /api/auth/me` - Get current user
-- `PUT /api/auth/profile` - Update user profile
-
-### Exercises
-- `GET /api/exercises` - Get all exercises
-- `GET /api/exercises/:id` - Get exercise by ID
-- `POST /api/exercises` - Create new exercise
-- `PUT /api/exercises/:id` - Update exercise
-- `DELETE /api/exercises/:id` - Delete exercise
-
-### Workouts
-- `GET /api/workouts` - Get all workouts for user
-- `GET /api/workouts/:id` - Get workout by ID
-- `POST /api/workouts` - Create new workout
-- `PUT /api/workouts/:id` - Update workout
-- `DELETE /api/workouts/:id` - Delete workout
-- `GET /api/workouts/stats` - Get workout statistics
-
-## 💪 Predefined Exercises
-
-The system comes with 6 pre-loaded exercises:
-
-1. **Push Ups** - Chest, Triceps | 80 cal/10min | Beginner
-2. **Squats** - Legs, Glutes | 100 cal/10min | Beginner
-3. **Bench Press** - Chest | 120 cal/10min | Intermediate
-4. **Deadlift** - Back, Legs | 150 cal/10min | Advanced
-5. **Pull Ups** - Back, Biceps | 110 cal/10min | Intermediate
-6. **Plank** - Core | 50 cal/10min | Beginner
-
-## 📊 Database Models
-
-### User
-```javascript
-{
-  name: String,
-  email: String (unique),
-  password: String (hashed),
-  weight: Number (optional),
-  height: Number (optional),
-  createdAt: Date
-}
+# AWS S3 Backup Configuration
+AWS_REGION=us-east-1
+AWS_ACCESS_KEY_ID=your_aws_access_key
+AWS_SECRET_ACCESS_KEY=your_aws_secret_key
+AWS_S3_BUCKET_NAME=gym-project-backups
+AWS_S3_PREFIX=database-backups
+BACKUP_SCHEDULER_ENABLED=true
+BACKUP_RETENTION_DAYS=30
 ```
 
-### Exercise
-```javascript
-{
-  name: String,
-  muscleGroup: String,
-  equipment: String,
-  difficulty: String (Beginner|Intermediate|Advanced),
-  caloriesPer10Min: Number,
-  description: String,
-  createdAt: Date
-}
+### Frontend Environment (`frontend/.env`)
+
+```env
+VITE_API_BASE_URL=/api
 ```
-
-### Workout
-```javascript
-{
-  userId: ObjectId (ref: User),
-  exerciseId: ObjectId (ref: Exercise),
-  duration: Number (minutes),
-  sets: Number (optional),
-  reps: Number (optional),
-  caloriesBurned: Number (calculated),
-  date: Date,
-  createdAt: Date
-}
-```
-
-## 🔐 Calorie Calculation Formula
-
-```
-Calories Burned = (Exercise Calories Per 10 Min) × (Duration / 10)
-
-Example: 30 minute Push Ups
-= (80 cal/10min) × (30 / 10)
-= 240 calories
-```
-
-## 🎨 Frontend Pages
-
-- **Login Page** - User login with email and password
-- **Register Page** - Create new account
-- **Dashboard** - Home page with stats and welcome message
-- **Exercises** - Browse all available exercises with search
-- **Workouts** - View, add, and manage workout history
-- **Profile** - Update personal info and view BMI
-
-## 🔒 Security Features
-
-- ✅ JWT authentication with access tokens
-- ✅ Password hashing with bcrypt
-- ✅ Protected API routes
-- ✅ CORS enabled
-- ✅ Input validation
-- ✅ Authorization checks on user workouts
-
-## 🚦 Running the Full App
-
-### Terminal 1 - Backend
-```bash
-cd backend
-npm install
-npm run seed   # First time only
-npm run dev
-```
-
-### Terminal 2 - Frontend
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Then open `http://localhost:3000` in your browser
-
-## 📝 Example Workflow
-
-1. **Register** a new account on `/register`
-2. **Login** with your credentials on `/login`
-3. **View Dashboard** to see your stats
-4. **Browse Exercises** to understand available workouts
-5. **Add Workout** - Select an exercise, duration, and date
-6. **Track Progress** - View your workout history and calories
-7. **Update Profile** - Add weight and height for BMI tracking
-
-## 🎓 Learning Resources
-
-This project demonstrates:
-- Full-stack MERN architecture
-- RESTful API design
-- MongoDB relationships
-- JWT authentication
-- React hooks and routing
-- Tailwind CSS styling
-- Form handling and validation
-- CORS setup
-- Environment variables
-
-## 🤝 Contributing
-
-Feel free to fork, modify, and use this project as a learning resource or portfolio project!
-
-## 📄 License
-
-This project is open source and available under the MIT License.
-
-## 🎯 Future Enhancements
-
-Possible features to add:
-- User roles (Admin/User)
-- Exercise images and videos
-- Workout plans and routines
-- Social features (follow friends)
-- Advanced analytics and graphs
-- Email notifications
-- Mobile app version
-- Progress photos
-- Nutrition tracking
-
-## 💬 Support
-
-If you encounter any issues or have questions, feel free to open an issue or contact the maintainers.
 
 ---
 
-**Built with ❤️ for fitness enthusiasts and developers**
+## 🚦 Getting Started
+
+### 1. Clone & Install Dependencies
+
+```bash
+# Clone repository
+git clone https://github.com/Poorna-danushka/fitness_app.git
+cd fitness_app
+
+# Install Backend Dependencies
+cd backend
+npm install
+
+# Install Frontend Dependencies
+cd ../frontend
+npm install
+```
+
+### 2. Database Seeding
+
+To initialize default membership plans, gym packages, and admin users:
+
+```bash
+cd backend
+npm run seed
+```
+
+To create/update a System Admin account:
+
+```bash
+node scripts/makeSystemAdmin.js
+```
+
+### 3. Run Development Servers
+
+**Backend Server (Terminal 1):**
+```bash
+cd backend
+npm run dev
+# Server runs on http://localhost:5000
+```
+
+**Frontend Application (Terminal 2):**
+```bash
+cd frontend
+npm run dev
+# Frontend runs on http://localhost:3000
+```
+
+---
+
+## 🧪 Testing & Verification
+
+Run automated test suites to verify system functionality:
+
+```bash
+# Run Coach Scheduling & Slot Isolation Tests
+cd backend
+node tests/coachScheduling.test.js
+
+# Run Trainer Dashboard Member Filter Tests
+node tests/trainerDashboardFilter.test.js
+
+# Run Frontend Type-Check & Production Build
+cd ../frontend
+npx tsc --noEmit
+npm run build
+```
+
+---
+
+## 📄 License
+
+This project is proprietary and confidential. Built for **TitanFit Pro** Gym & Fitness Center operations.
