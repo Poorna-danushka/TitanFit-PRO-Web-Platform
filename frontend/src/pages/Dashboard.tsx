@@ -192,21 +192,48 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Greeting */}
+      {/* Dynamic Greeting & Member Header Banner */}
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-        <div className="flex items-start justify-between flex-wrap gap-3">
+        <div className="flex items-start justify-between flex-wrap gap-4">
           <div>
-            <h1 className="font-display text-3xl md:text-4xl font-bold text-white mb-1">
-              Welcome back, {user?.name?.split(' ')[0]}! 👋
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="px-2.5 py-0.5 rounded-full bg-green-500/10 text-green-400 border border-green-500/20 text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                Pro Member
+              </span>
+              {activePackage && (
+                <span className="px-2.5 py-0.5 rounded-full bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 text-[10px] font-extrabold uppercase tracking-wider">
+                  {activePackage.name}
+                </span>
+              )}
+            </div>
+            <h1 className="font-display text-3xl md:text-4xl font-extrabold text-white tracking-tight flex items-center gap-2">
+              {(() => {
+                const hour = new Date().getHours();
+                if (hour < 12) return 'Good Morning';
+                if (hour < 18) return 'Good Afternoon';
+                return 'Good Evening';
+              })()}, {user?.name?.split(' ')[0]}! 👋
             </h1>
-            <p className="text-gray-500 text-sm">Here's your gym membership & facility overview.</p>
+            <p className="text-gray-400 text-sm mt-1">Here's your gym membership, digital entry pass, & facility overview.</p>
           </div>
-          {/* Motivational quote */}
-          <div className="hidden lg:flex items-start gap-2 max-w-xs p-3 rounded-2xl bg-white/[0.025] border border-white/[0.06]">
-            <Quote className="w-3.5 h-3.5 text-green-500 shrink-0 mt-0.5" />
-            <div>
-              <p className="text-xs text-gray-400 italic leading-relaxed">"{todayQuote.quote}"</p>
-              <p className="text-[10px] text-gray-700 mt-1">— {todayQuote.author}</p>
+
+          <div className="flex items-center gap-3">
+            <Link
+              to="/attendance-qr"
+              className="px-4 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-black font-extrabold text-xs rounded-xl transition-all shadow-[0_0_20px_rgba(34,197,94,0.3)] flex items-center gap-2 shrink-0"
+            >
+              <QrCode className="w-4 h-4" />
+              <span>Digital QR Pass</span>
+            </Link>
+
+            {/* Motivational quote snippet */}
+            <div className="hidden xl:flex items-start gap-2.5 max-w-xs p-3 rounded-2xl bg-white/[0.025] border border-white/[0.07] backdrop-blur-md">
+              <Quote className="w-4 h-4 text-green-400 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-xs text-gray-300 italic leading-relaxed">"{todayQuote.quote}"</p>
+                <p className="text-[10px] text-gray-500 mt-1 font-semibold">— {todayQuote.author}</p>
+              </div>
             </div>
           </div>
         </div>
@@ -256,7 +283,52 @@ export default function Dashboard() {
         </motion.div>
       )}
 
-      {/* Stats */}
+      {/* Plan Expiration & Renewal Package Recommendation Banner */}
+      {activePackage && (
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-2xl p-5 bg-gradient-to-r from-purple-950/40 via-[#111115] to-[#121110] border border-purple-500/30 text-white relative overflow-hidden shadow-xl"
+        >
+          <div className="flex items-start gap-4">
+            <div className="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-300 flex items-center justify-center shrink-0 border border-purple-500/30">
+              <Sparkles className="w-5 h-5 text-purple-300" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                <span className="px-2.5 py-0.5 bg-purple-500/20 text-purple-300 text-[10px] font-extrabold uppercase rounded-full border border-purple-500/30 flex items-center gap-1">
+                  Active Package: {activePackage.name}
+                </span>
+                <span className="text-xs text-green-400 font-semibold">
+                  ✓ Valid & Active ({activePackage.duration || '1 Month'})
+                </span>
+              </div>
+              <h3 className="text-base font-bold text-white">
+                Explore Newly Available Plans & Upgrade Options
+              </h3>
+              <p className="text-xs text-gray-300 mt-1 leading-relaxed">
+                Stay updated with our latest gym packages, 1-on-1 personal trainer inclusions, and family membership tiers. When your current plan completes, instant renewals are processed seamlessly.
+              </p>
+              <div className="mt-3 flex items-center gap-3">
+                <Link
+                  to="/packages"
+                  className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold rounded-xl transition-all inline-flex items-center gap-1.5 shadow-md shadow-purple-600/30"
+                >
+                  View Available Plans <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+                <Link
+                  to="/my-package"
+                  className="px-3.5 py-2 bg-white/5 hover:bg-white/10 text-gray-300 text-xs font-bold rounded-xl transition-all border border-white/10"
+                >
+                  My Package Details
+                </Link>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, i) => {
           const Icon = stat.icon;
@@ -265,21 +337,27 @@ export default function Dashboard() {
               key={stat.title}
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.07 }}
-              className={`stat-card bg-gradient-to-br ${stat.gradient} to-transparent`}
+              whileHover={{ y: -4, scale: 1.02 }}
+              transition={{ delay: i * 0.07, type: 'spring', stiffness: 200 }}
+              className={`stat-card bg-gradient-to-br ${stat.gradient} to-transparent border border-white/[0.08] hover:border-white/20 backdrop-blur-xl shadow-lg transition-all`}
             >
-              <div className={`w-10 h-10 rounded-xl ${stat.iconBg} flex items-center justify-center mb-4`}>
-                <Icon className={`w-5 h-5 ${stat.iconColor}`} />
+              <div className="flex items-center justify-between mb-3">
+                <div className={`w-10 h-10 rounded-xl ${stat.iconBg} flex items-center justify-center border border-white/5`}>
+                  <Icon className={`w-5 h-5 ${stat.iconColor}`} />
+                </div>
+                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest bg-white/[0.04] px-2 py-0.5 rounded-full border border-white/5">
+                  Live
+                </span>
               </div>
-              <p className="text-gray-500 text-xs font-medium mb-1.5">{stat.title}</p>
+              <p className="text-gray-400 text-xs font-semibold mb-1">{stat.title}</p>
               {loading ? (
                 <div className="skeleton h-7 w-24 mb-1" />
               ) : (
-                <p className="font-display text-xl md:text-2xl font-bold text-white leading-none mb-1 truncate">
+                <p className="font-display text-xl md:text-2xl font-black text-white leading-none mb-1.5 truncate">
                   {stat.value}
                 </p>
               )}
-              <p className="text-gray-600 text-xs leading-snug">{stat.sub}</p>
+              <p className="text-gray-500 text-[11px] leading-snug truncate">{stat.sub}</p>
             </motion.div>
           );
         })}

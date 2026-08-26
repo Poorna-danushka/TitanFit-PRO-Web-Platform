@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, Package, CreditCard, LogOut, X, Bell, User } from 'lucide-react';
+import { LayoutDashboard, Users, Package, CreditCard, LogOut, X, Bell, User, Database } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useAdminAnnouncements } from '../hooks/useNotifications';
 
@@ -23,6 +23,7 @@ export default function AdminSidebar({ onClose }: Props) {
     { name: 'Packages',      path: '/admin/packages',      icon: <Package         className="w-[18px] h-[18px]" /> },
     { name: 'Purchases',     path: '/admin/purchases',     icon: <CreditCard      className="w-[18px] h-[18px]" /> },
     { name: 'Notifications', path: '/admin/notifications', icon: <Bell            className="w-[18px] h-[18px]" />, badge: announcements.length },
+    { name: 'Backups',       path: '/admin/backups',       icon: <Database        className="w-[18px] h-[18px]" /> },
   ];
 
   const avatarColor = isSysAdmin

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { trainerAPI } from '../api/apiService';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -104,6 +104,7 @@ function formatTimeDisplay(t24: string): string {
 
 export default function TrainerDashboard() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const tabParam = searchParams.get('tab');
   const activeTab: 'training-space' | 'availability' | 'profile' =
@@ -430,27 +431,72 @@ export default function TrainerDashboard() {
         </div>
       </motion.div>
 
+      {/* ─── IN-PAGE GLASS TAB NAVIGATION ─────────────────────────────────── */}
+      <div className="flex items-center gap-2 border-b border-white/10 pb-3 overflow-x-auto">
+        {[
+          { id: 'training-space', label: 'Training Space', icon: <Calendar className="w-4 h-4" /> },
+          { id: 'availability',   label: 'Weekly Availability', icon: <Clock className="w-4 h-4" /> },
+          { id: 'profile',        label: 'Coach Profile & Rates', icon: <Award className="w-4 h-4" /> },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => navigate(`/trainer/dashboard?tab=${tab.id}`)}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl text-xs font-bold transition-all whitespace-nowrap ${
+              activeTab === tab.id
+                ? 'bg-purple-600 text-white shadow-[0_0_20px_rgba(147,51,234,0.35)]'
+                : 'bg-white/[0.03] text-gray-400 border border-white/5 hover:bg-white/10 hover:text-white'
+            }`}
+          >
+            {tab.icon}
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
       {/* ─── TAB 1: TRAINING SPACE ──────────────────────────────────────── */}
       {activeTab === 'training-space' && (
         <div className="space-y-8">
           {/* Quick Metrics Bar */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div className="bg-[#111115]/90 border border-white/10 rounded-2xl p-4 space-y-1">
-              <p className="text-[11px] font-bold text-gray-400 uppercase">Today's Total</p>
-              <p className="text-2xl font-bold text-white">{stats.todaySessionsCount}</p>
-            </div>
-            <div className="bg-[#111115]/90 border border-white/10 rounded-2xl p-4 space-y-1">
-              <p className="text-[11px] font-bold text-gray-400 uppercase">Remaining Today</p>
-              <p className="text-2xl font-bold text-green-400">{stats.todayRemainingCount}</p>
-            </div>
-            <div className="bg-[#111115]/90 border border-white/10 rounded-2xl p-4 space-y-1">
-              <p className="text-[11px] font-bold text-gray-400 uppercase">Booked This Week</p>
-              <p className="text-2xl font-bold text-purple-400">{stats.bookedSlotsThisWeek}</p>
-            </div>
-            <div className="bg-[#111115]/90 border border-white/10 rounded-2xl p-4 space-y-1">
-              <p className="text-[11px] font-bold text-gray-400 uppercase">Completed All-Time</p>
-              <p className="text-2xl font-bold text-indigo-400">{stats.completedSessionsCount}</p>
-            </div>
+            <motion.div
+              whileHover={{ y: -4, scale: 1.02 }}
+              transition={{ type: 'spring', stiffness: 200 }}
+              className="bg-[#111115]/90 border border-white/10 hover:border-purple-500/30 rounded-2xl p-4 space-y-1 shadow-lg transition-all"
+            >
+              <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Today's Total</p>
+              <p className="text-3xl font-display font-black text-white">{stats.todaySessionsCount}</p>
+              <p className="text-[10px] text-gray-500">Scheduled sessions</p>
+            </motion.div>
+
+            <motion.div
+              whileHover={{ y: -4, scale: 1.02 }}
+              transition={{ type: 'spring', stiffness: 200 }}
+              className="bg-[#111115]/90 border border-green-500/20 hover:border-green-500/40 rounded-2xl p-4 space-y-1 shadow-lg transition-all"
+            >
+              <p className="text-[11px] font-bold text-green-400/90 uppercase tracking-wider">Remaining Today</p>
+              <p className="text-3xl font-display font-black text-green-400">{stats.todayRemainingCount}</p>
+              <p className="text-[10px] text-gray-500">Active sessions left</p>
+            </motion.div>
+
+            <motion.div
+              whileHover={{ y: -4, scale: 1.02 }}
+              transition={{ type: 'spring', stiffness: 200 }}
+              className="bg-[#111115]/90 border border-purple-500/20 hover:border-purple-500/40 rounded-2xl p-4 space-y-1 shadow-lg transition-all"
+            >
+              <p className="text-[11px] font-bold text-purple-300 uppercase tracking-wider">Booked This Week</p>
+              <p className="text-3xl font-display font-black text-purple-400">{stats.bookedSlotsThisWeek}</p>
+              <p className="text-[10px] text-gray-500">Confirmed member slots</p>
+            </motion.div>
+
+            <motion.div
+              whileHover={{ y: -4, scale: 1.02 }}
+              transition={{ type: 'spring', stiffness: 200 }}
+              className="bg-[#111115]/90 border border-indigo-500/20 hover:border-indigo-500/40 rounded-2xl p-4 space-y-1 shadow-lg transition-all"
+            >
+              <p className="text-[11px] font-bold text-indigo-300 uppercase tracking-wider">Completed All-Time</p>
+              <p className="text-3xl font-display font-black text-indigo-400">{stats.completedSessionsCount}</p>
+              <p className="text-[10px] text-gray-500">Total sessions coached</p>
+            </motion.div>
           </div>
 
           {/* Today's Sessions Section */}
@@ -777,34 +823,53 @@ export default function TrainerDashboard() {
 
           {/* Summary Dashboard Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div className="bg-[#111115]/90 border border-purple-500/20 rounded-2xl p-5 text-center space-y-1">
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Available Days</p>
+            <motion.div
+              whileHover={{ y: -4, scale: 1.02 }}
+              transition={{ type: 'spring', stiffness: 200 }}
+              className="bg-[#111115]/90 border border-purple-500/30 hover:border-purple-500/50 rounded-2xl p-5 text-center space-y-1 shadow-lg transition-all"
+            >
+              <p className="text-[10px] font-bold text-purple-300 uppercase tracking-wider">Available Days</p>
               <p className="text-3xl font-display font-black text-purple-400">
                 {availabilitySummary.availableDays}
               </p>
-              <p className="text-[10px] text-gray-500">Days per week</p>
-            </div>
-            <div className="bg-[#111115]/90 border border-purple-500/20 rounded-2xl p-5 text-center space-y-1">
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Available Sessions</p>
+              <p className="text-[10px] text-gray-500">Working days / week</p>
+            </motion.div>
+
+            <motion.div
+              whileHover={{ y: -4, scale: 1.02 }}
+              transition={{ type: 'spring', stiffness: 200 }}
+              className="bg-[#111115]/90 border border-indigo-500/30 hover:border-indigo-500/50 rounded-2xl p-5 text-center space-y-1 shadow-lg transition-all"
+            >
+              <p className="text-[10px] font-bold text-indigo-300 uppercase tracking-wider">Available Sessions</p>
               <p className="text-3xl font-display font-black text-indigo-400">
                 {availabilitySummary.totalWeeklySlots}
               </p>
               <p className="text-[10px] text-gray-500">1-hr slots / week</p>
-            </div>
-            <div className="bg-[#111115]/90 border border-purple-500/20 rounded-2xl p-5 text-center space-y-1">
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Booked This Week</p>
+            </motion.div>
+
+            <motion.div
+              whileHover={{ y: -4, scale: 1.02 }}
+              transition={{ type: 'spring', stiffness: 200 }}
+              className="bg-[#111115]/90 border border-green-500/30 hover:border-green-500/50 rounded-2xl p-5 text-center space-y-1 shadow-lg transition-all"
+            >
+              <p className="text-[10px] font-bold text-green-300 uppercase tracking-wider">Booked This Week</p>
               <p className="text-3xl font-display font-black text-green-400">
                 {availabilitySummary.bookedThisWeek}
               </p>
               <p className="text-[10px] text-gray-500">Confirmed sessions</p>
-            </div>
-            <div className="bg-[#111115]/90 border border-purple-500/20 rounded-2xl p-5 text-center space-y-1">
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Open Slots</p>
+            </motion.div>
+
+            <motion.div
+              whileHover={{ y: -4, scale: 1.02 }}
+              transition={{ type: 'spring', stiffness: 200 }}
+              className="bg-[#111115]/90 border border-amber-500/30 hover:border-amber-500/50 rounded-2xl p-5 text-center space-y-1 shadow-lg transition-all"
+            >
+              <p className="text-[10px] font-bold text-amber-300 uppercase tracking-wider">Open Slots</p>
               <p className="text-3xl font-display font-black text-amber-400">
                 {availabilitySummary.openSlotsThisWeek}
               </p>
-              <p className="text-[10px] text-gray-500">Bookable slots</p>
-            </div>
+              <p className="text-[10px] text-gray-500">Bookable member slots</p>
+            </motion.div>
           </div>
 
           {/* Weekly Days Configuration List */}

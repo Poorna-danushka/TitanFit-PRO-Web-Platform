@@ -36,6 +36,31 @@ A complete full-stack web application for gym management and workout tracking, b
 - Mobile-friendly design
 - Professional look and feel
 
+## 🔐 Backup & Recovery with AWS S3
+
+The backend includes a full MongoDB backup and restore workflow that stores compressed database archives in AWS S3 using server-side encryption and SHA-256 checksum validation.
+
+Required backend env variables:
+
+```env
+AWS_REGION=us-east-1
+AWS_ACCESS_KEY_ID=your_aws_access_key_id
+AWS_SECRET_ACCESS_KEY=your_aws_secret_access_key
+AWS_S3_BUCKET_NAME=your-fitness-backup-bucket
+AWS_S3_PREFIX=database-backups
+AWS_S3_SERVER_SIDE_ENCRYPTION=AES256
+BACKUP_RETENTION_DAYS=30
+```
+
+Admin API endpoints:
+
+- GET /api/v1/admin/backups/config
+- GET /api/v1/admin/backups
+- POST /api/v1/admin/backups/create
+- POST /api/v1/admin/backups/restore
+
+The dump files are produced with `mongodump --archive --gzip` and uploaded with S3 server-side encryption, while each backup is verified by SHA-256 checksums before restore.
+
 ## 🛠️ Tech Stack
 
 ### Backend

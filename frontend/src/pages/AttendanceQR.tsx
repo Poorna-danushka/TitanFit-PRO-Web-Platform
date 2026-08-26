@@ -87,37 +87,60 @@ export default function AttendanceQR() {
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
-        {/* Digital Entry Pass */}
+        {/* Digital Entry Pass - Apple Wallet Style Card */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          className="card-surface rounded-2xl p-6 border border-white/[0.08] flex flex-col items-center text-center justify-between"
+          className="relative rounded-3xl p-6 md:p-8 bg-gradient-to-br from-[#141816] via-[#0d120f] to-[#0a0a0c] border border-green-500/30 shadow-[0_0_50px_rgba(34,197,94,0.15)] overflow-hidden flex flex-col justify-between"
         >
-          <div className="w-full">
+          {/* Ambient Glow */}
+          <div className="absolute top-0 right-0 w-72 h-72 bg-green-500/10 rounded-full blur-[80px] pointer-events-none" />
+
+          <div className="relative z-10 w-full">
             {hasActivePass ? (
               <>
-                <div className="flex items-center justify-between mb-4 text-xs">
-                  <span className="font-bold text-green-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <ShieldCheck className="w-4 h-4" /> Active Member Pass
-                  </span>
-                  <span className="px-2.5 py-0.5 rounded-full bg-green-500/10 text-green-400 border border-green-500/20 font-semibold">
-                    VALID
+                <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/10">
+                  <div className="flex items-center gap-2">
+                    <span className="font-display font-extrabold text-lg tracking-tight text-white">
+                      TITAN<span className="text-green-400">FIT</span>
+                    </span>
+                    <span className="px-2 py-0.5 rounded bg-green-500/20 text-green-300 text-[10px] font-black uppercase tracking-widest border border-green-500/30">
+                      ACCESS PASS
+                    </span>
+                  </div>
+                  <span className="px-3 py-1 rounded-full bg-green-500/20 text-green-400 border border-green-500/40 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-[0_0_12px_rgba(34,197,94,0.3)]">
+                    <span className="w-2 h-2 rounded-full bg-green-400 animate-ping" />
+                    ACTIVE PASS
                   </span>
                 </div>
 
-                <h3 className="text-xl font-bold text-white mb-1">{user?.name}</h3>
-                <p className="text-xs text-gray-400 mb-6">{user?.email}</p>
-
-                {/* QR Code Container */}
-                <div className="bg-white p-6 rounded-2xl inline-block shadow-2xl shadow-green-500/10 border-4 border-green-500/20 my-2">
-                  <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrCodeData)}`}
-                    alt="Member Entry QR Pass"
-                    className="w-44 h-44 object-contain"
-                  />
+                <div className="text-center mb-6">
+                  <h3 className="text-2xl font-bold text-white mb-0.5">{user?.name}</h3>
+                  <p className="text-xs text-gray-400 font-mono">{user?.email}</p>
                 </div>
 
-                <p className="text-[11px] text-gray-500 mt-4">Show this QR code to reception scanner to record entry/exit.</p>
+                {/* QR Code Container with Neon Scanner Frame */}
+                <div className="relative group my-4 flex justify-center">
+                  <div className="relative bg-white p-5 rounded-3xl shadow-[0_0_30px_rgba(34,197,94,0.3)] border-4 border-green-500/30 group-hover:scale-105 transition-transform duration-300">
+                    <img
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(qrCodeData)}`}
+                      alt="Member Entry QR Pass"
+                      className="w-48 h-48 object-contain rounded-xl"
+                    />
+                    {/* Glowing corner brackets */}
+                    <div className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-green-500" />
+                    <div className="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-green-500" />
+                    <div className="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-green-500" />
+                    <div className="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-green-500" />
+                  </div>
+                </div>
+
+                <div className="mt-6 pt-4 border-t border-white/10 text-center">
+                  <p className="text-xs text-gray-300 font-semibold flex items-center justify-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-green-400" /> Scan QR payload at reception kiosk
+                  </p>
+                  <p className="text-[10px] text-gray-500 mt-1">Encrypted dynamic pass for facility entry & exit.</p>
+                </div>
               </>
             ) : isPendingVerification ? (
               <div className="py-6 space-y-4 text-left">
@@ -146,8 +169,8 @@ export default function AttendanceQR() {
                 </Link>
               </div>
             ) : (
-              <div className="py-8 space-y-4">
-                <div className="w-16 h-16 rounded-full bg-white/5 mx-auto flex items-center justify-center text-gray-500">
+              <div className="py-8 space-y-4 text-center">
+                <div className="w-16 h-16 rounded-full bg-white/5 mx-auto flex items-center justify-center text-gray-500 border border-white/10">
                   <Clock className="w-8 h-8" />
                 </div>
                 <h3 className="text-lg font-bold text-white">Active Membership Required</h3>

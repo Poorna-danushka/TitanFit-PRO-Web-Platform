@@ -19,6 +19,7 @@ import ManagePackages from './pages/admin/ManagePackages';
 import ManageUsers from './pages/admin/ManageUsers';
 import ManagePurchases from './pages/admin/ManagePurchases';
 import ManageNotifications from './pages/admin/ManageNotifications';
+import BackupSettings from './pages/admin/BackupSettings';
 
 import ForceChangePassword from './pages/ForceChangePassword';
 
@@ -131,6 +132,7 @@ function App() {
               <Route path="users" element={<ManageUsers />} />
               <Route path="purchases" element={<ManagePurchases />} />
               <Route path="notifications" element={<ManageNotifications />} />
+              <Route path="backups" element={<BackupSettings />} />
             </Route>
           </Route>
 

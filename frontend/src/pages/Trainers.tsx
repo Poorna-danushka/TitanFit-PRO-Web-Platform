@@ -954,6 +954,50 @@ export default function Trainers() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Floating Bottom Multi-Session Bar when slots are selected */}
+      <AnimatePresence>
+        {selectedSlots.length > 0 && !confirmationModalOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            className="fixed bottom-20 lg:bottom-6 left-1/2 -translate-x-1/2 z-40 w-[92%] max-w-xl bg-[#141419]/95 border border-purple-500/40 rounded-2xl p-4 shadow-[0_0_40px_rgba(147,51,234,0.3)] backdrop-blur-xl flex items-center justify-between gap-4"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-300 flex items-center justify-center font-bold text-sm border border-purple-500/30">
+                {selectedSlots.length}
+              </div>
+              <div>
+                <p className="text-xs font-bold text-white">
+                  {selectedSlots.length} session{selectedSlots.length > 1 ? 's' : ''} selected
+                </p>
+                <p className="text-[10px] text-purple-300">
+                  Ready for weekly recurring confirmation
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setSelectedSlots([])}
+                className="px-3 py-2 text-xs font-semibold text-gray-400 hover:text-white transition-colors"
+              >
+                Clear
+              </button>
+              <button
+                onClick={() => {
+                  setBookingError(null);
+                  setConfirmationModalOpen(true);
+                }}
+                className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs rounded-xl transition-all shadow-lg shadow-purple-600/30 flex items-center gap-1.5"
+              >
+                <Check className="w-4 h-4" /> Confirm ({selectedSlots.length})
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -3,12 +3,12 @@ import { Outlet, Link, useLocation } from 'react-router-dom';
 import UserSidebar from './UserSidebar';
 import Navbar from './Navbar';
 import ChatBot from './ChatBot';
-import { Home, Dumbbell, Package, User, Bell } from 'lucide-react';
+import { Home, QrCode, Package, User, Bell } from 'lucide-react';
 import { useAnnouncements } from '../hooks/useNotifications';
 
 const BOTTOM_NAV = [
   { path: '/dashboard',      icon: Home,     label: 'Home'     },
-  { path: '/workouts',       icon: Dumbbell, label: 'Workouts' },
+  { path: '/attendance-qr',  icon: QrCode,   label: 'QR Pass'  },
   { path: '/my-package',     icon: Package,  label: 'Package'  },
   { path: '/notifications',  icon: Bell,     label: 'Alerts'   },
   { path: '/profile',        icon: User,     label: 'Profile'  },
