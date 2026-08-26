@@ -47,6 +47,8 @@ const membershipSchema = new mongoose.Schema(
     freezeEndDate: { type: Date },
     cancelledAt: { type: Date },
     cancellationReason: { type: String },
+    expirationNotified: { type: Boolean, default: false },
+    expirationNotifiedAt: { type: Date },
     familyMembers: [
       {
         name: { type: String, required: true },
