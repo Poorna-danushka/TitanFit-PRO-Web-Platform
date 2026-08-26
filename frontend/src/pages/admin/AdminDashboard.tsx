@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { adminAPI } from '../../api/apiService';
 import { motion } from 'framer-motion';
 import {
-  Users, Package, CreditCard, Activity, TrendingUp, Bell, Dumbbell,
+  Users, Package, CreditCard, Activity, TrendingUp, Bell,
   Plus, ArrowRight, Clock
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
@@ -103,7 +103,6 @@ export default function AdminDashboard() {
   const quickActions = [
     { label: 'New Announcement', icon: Bell,    color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'hover:border-purple-500/30', path: '/admin/notifications' },
     { label: 'Add Package',      icon: Plus,    color: 'text-green-400',  bg: 'bg-green-500/10',  border: 'hover:border-green-500/30',  path: '/admin/packages' },
-    { label: 'Add Exercise',     icon: Dumbbell,color: 'text-blue-400',   bg: 'bg-blue-500/10',   border: 'hover:border-blue-500/30',   path: '/admin/exercises' },
     { label: 'Manage Users',     icon: Users,   color: 'text-yellow-400', bg: 'bg-yellow-500/10', border: 'hover:border-yellow-500/30', path: '/admin/users' },
   ];
 

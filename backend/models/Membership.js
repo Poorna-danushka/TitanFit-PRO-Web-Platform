@@ -47,6 +47,14 @@ const membershipSchema = new mongoose.Schema(
     freezeEndDate: { type: Date },
     cancelledAt: { type: Date },
     cancellationReason: { type: String },
+    familyMembers: [
+      {
+        name: { type: String, required: true },
+        age: { type: Number },
+        relationship: { type: String },
+        phone: { type: String },
+      },
+    ],
   },
   { timestamps: true }
 );

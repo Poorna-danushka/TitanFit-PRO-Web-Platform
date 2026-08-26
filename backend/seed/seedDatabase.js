@@ -10,8 +10,6 @@ import TrainerProfile from '../models/TrainerProfile.js';
 import MembershipPlan from '../models/MembershipPlan.js';
 import Membership from '../models/Membership.js';
 import Package from '../models/Package.js';
-import Exercise from '../models/Exercise.js';
-import Workout from '../models/Workout.js';
 import Attendance from '../models/Attendance.js';
 import MemberQRCode from '../models/MemberQRCode.js';
 import PersonalTrainingPackage from '../models/PersonalTrainingPackage.js';
@@ -40,8 +38,6 @@ const seedDatabase = async () => {
       MembershipPlan.deleteMany({}),
       Membership.deleteMany({}),
       Package.deleteMany({}),
-      Exercise.deleteMany({}),
-      Workout.deleteMany({}),
       Attendance.deleteMany({}),
       MemberQRCode.deleteMany({}),
       PersonalTrainingPackage.deleteMany({}),
@@ -339,70 +335,7 @@ const seedDatabase = async () => {
       });
     }
 
-    // ============ 6. EXERCISES & WORKOUT LOGS ============
-    console.log('🏋️ Creating exercise library & sample workout logs...');
-    const exercises = await Exercise.create([
-      {
-        name: 'Barbell Bench Press',
-        description: 'Flat bench press for chest, triceps, and anterior deltoids.',
-        muscleGroup: 'Chest',
-        muscleGroups: ['Chest', 'Triceps', 'Shoulders'],
-        difficulty: 'INTERMEDIATE',
-        caloriesPer10Min: 85,
-        beginnerReps: '8-10',
-        intermediateReps: '6-8',
-        advancedReps: '4-6',
-      },
-      {
-        name: 'Barbell Squats',
-        description: 'Back squats for leg strength and quadriceps development.',
-        muscleGroup: 'Legs',
-        muscleGroups: ['Quadriceps', 'Glutes', 'Hamstrings'],
-        difficulty: 'INTERMEDIATE',
-        caloriesPer10Min: 105,
-        beginnerReps: '10-12',
-        intermediateReps: '8-10',
-        advancedReps: '5-8',
-      },
-      {
-        name: 'Conventional Deadlift',
-        description: 'Posterior chain builder for back, glutes, and grip strength.',
-        muscleGroup: 'Back',
-        muscleGroups: ['Back', 'Glutes', 'Hamstrings'],
-        difficulty: 'ADVANCED',
-        caloriesPer10Min: 120,
-        beginnerReps: '5-6',
-        intermediateReps: '5-5',
-        advancedReps: '3-5',
-      },
-      {
-        name: 'Pull-ups',
-        description: 'Bodyweight vertical pull for lats and biceps.',
-        muscleGroup: 'Back',
-        muscleGroups: ['Back', 'Biceps'],
-        difficulty: 'BEGINNER',
-        caloriesPer10Min: 70,
-        beginnerReps: '5-8',
-        intermediateReps: '8-12',
-        advancedReps: '12-15',
-      },
-    ]);
-
-    // Sample workouts
-    for (let i = 0; i < 5; i++) {
-      await Workout.create({
-        userId: members[i]._id,
-        exerciseId: exercises[i % exercises.length]._id,
-        duration: 45,
-        sets: 4,
-        reps: 10,
-        weight: 60 + (i * 5),
-        caloriesBurned: 220,
-        date: new Date(Date.now() - (i * 2 * 24 * 60 * 60 * 1000)),
-      });
-    }
-
-    // ============ 7. PERSONAL TRAINING PACKAGES & BOOKINGS ============
+    // ============ 6. PERSONAL TRAINING PACKAGES & BOOKINGS ============
     console.log('🏆 Creating Personal Training packages & bookings...');
     const ptPackages = await PersonalTrainingPackage.create([
       { name: '4 Sessions Pack', sessions: 4, durationWeeks: 4, price: 16000, description: '4 1-on-1 personal training sessions' },

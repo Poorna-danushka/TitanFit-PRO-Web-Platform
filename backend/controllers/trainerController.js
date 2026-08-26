@@ -22,6 +22,7 @@ import {
   normalizeTime24,
   format12Hour,
   formatDateOnly,
+  parseLocalDate,
   timeToMinutes,
   minutesToTime,
   ORDERED_WEEK_DAYS,
@@ -548,21 +549,38 @@ export const bookTrainerSession = asyncHandler(async (req, res) => {
       const targetDayOfWeek = parseInt(
         sess.dayOfWeek !== undefined
           ? sess.dayOfWeek
-          : (sess.date ? new Date(sess.date).getDay() : 1),
+          : (sess.date ? parseLocalDate(sess.date).getDay() : 1),
         10
       );
 
+      // Resolve this slot's normalized 24h start time up front (used only
+      // for the recurringSlotId grouping key, not for any date math).
+      const recurringStartTime = normalizeTime24(
+        sess.startTime || (sess.timeSlot ? sess.timeSlot.split(' - ')[0] : '00:00')
+      );
+
       // Generate a unique ID to group all occurrences of this one weekly slot selection
-      const recurringSlotId = `${userId}_${targetDayOfWeek}_${normalizeTime24(sess.startTime || (sess.timeSlot ? sess.timeSlot.split(' - ')[0] : '00:00'))}_${Date.now()}`;
+      const recurringSlotId = `${userId}_${targetDayOfWeek}_${recurringStartTime}_${Date.now()}`;
 
-      const startDate = new Date();
-      startDate.setHours(0, 0, 0, 0);
-
-      // Find the first occurrence of targetDayOfWeek from today onwards
-      let currentPointer = new Date(startDate);
-      while (currentPointer.getDay() !== targetDayOfWeek) {
-        currentPointer.setDate(currentPointer.getDate() + 1);
+      // Anchor the first occurrence to the exact calendar date the member
+      // selected in the UI (the frontend already sends the correct date for
+      // targetDayOfWeek within the week they were viewing). We deliberately
+      // do NOT re-derive or shift this using the server's current date/time —
+      // the day/time the request happens to be made should never change
+      // which occurrences get scheduled, including when the selected day
+      // falls earlier in the current week than today.
+      let currentPointer;
+      const anchorDateStr = sess.sessionDate || sess.date;
+      if (anchorDateStr) {
+        currentPointer = parseLocalDate(anchorDateStr);
+      } else {
+        // No explicit date sent — fall back to the nearest matching weekday.
+        currentPointer = new Date();
+        while (currentPointer.getDay() !== targetDayOfWeek) {
+          currentPointer.setDate(currentPointer.getDate() + 1);
+        }
       }
+      currentPointer.setHours(0, 0, 0, 0);
 
       // Generate one occurrence per week until membership end date
       let w = 0;
@@ -640,16 +658,21 @@ export const bookTrainerSession = asyncHandler(async (req, res) => {
       throw new ValidationError('Invalid session time slot specified.');
     }
 
-    // Verify slot is not in the past
-    const [y, m, d] = sessDateStr.split('-').map(Number);
-    const [sh, sm] = startTime.split(':').map(Number);
-    const slotStartDateTime = new Date(y, m - 1, d, sh, sm, 0, 0);
+    // Verify slot is not in the past. Recurring weekly sessions are exempt:
+    // the selected weekday can legitimately fall earlier in the current
+    // week than today (e.g. picking Monday while viewing on a Wednesday),
+    // and that must not block the booking or any other slot in this batch.
+    if (!sess.isRecurring) {
+      const [y, m, d] = sessDateStr.split('-').map(Number);
+      const [sh, sm] = startTime.split(':').map(Number);
+      const slotStartDateTime = new Date(y, m - 1, d, sh, sm, 0, 0);
 
-    if (slotStartDateTime < now) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json({
-        success: false,
-        message: `Cannot book session in the past (${sessDateStr} at ${format12Hour(startTime)}).`,
-      });
+      if (slotStartDateTime < now) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          message: `Cannot book session in the past (${sessDateStr} at ${format12Hour(startTime)}).`,
+        });
+      }
     }
 
     const weekInfo = getWeekRange(sessDateStr);
@@ -697,10 +720,9 @@ export const bookTrainerSession = asyncHandler(async (req, res) => {
   const ruleMap = new Map();
   coachRules.forEach((r) => ruleMap.set(r.dayOfWeek, r));
 
-  // Additional pre-validation of coach rules & slot duration
   for (const sess of sessionRequests) {
     const sessDateStr = sess.sessionDate || sess.date;
-    const parsedDate = new Date(sessDateStr);
+    const parsedDate = parseLocalDate(sessDateStr);
     const startTime = sess.startTime || normalizeTime24(sess.timeSlot?.split(' - ')[0]);
     const endTime = sess.endTime || minutesToTime(timeToMinutes(startTime) + 60);
 
@@ -731,32 +753,33 @@ export const bookTrainerSession = asyncHandler(async (req, res) => {
     }
   }
 
-  // 5. ATOMIC SESSION & TRANSACTION LIFECYCLE
+  // 5. ATOMIC SESSION & TRANSACTION LIFECYCLE WITH STANDALONE FALLBACK
   let session = null;
+  let useTransaction = false;
 
   try {
     session = await mongoose.startSession();
     session.startTransaction();
+    useTransaction = true;
   } catch (transErr) {
-    logger.error(`Failed to start database transaction for booking: ${transErr.message}`);
+    logger.warn(`[bookTrainerSession] MongoDB transaction unavailable (${transErr.message}). Continuing in direct database save mode.`);
     if (session) {
       try { session.endSession(); } catch (_) {}
     }
-    return res.status(HTTP_STATUS.SERVICE_UNAVAILABLE).json({
-      success: false,
-      message: 'Booking service is temporarily unavailable. Please try again.',
-    });
+    session = null;
+    useTransaction = false;
   }
 
   const createdBookings = [];
+  const skippedSlots = [];
   const pendingNotifications = [];
 
   try {
-    const saveOpts = { session };
+    const saveOpts = session ? { session } : {};
 
     for (const sess of sessionRequests) {
       const sessDateStr = sess.sessionDate || sess.date;
-      const parsedDate = new Date(sessDateStr);
+      const parsedDate = parseLocalDate(sessDateStr);
       parsedDate.setHours(0, 0, 0, 0);
 
       const startTime = sess.startTime || normalizeTime24(sess.timeSlot?.split(' - ')[0]);
@@ -787,14 +810,17 @@ export const bookTrainerSession = asyncHandler(async (req, res) => {
           continue;
         }
 
-        if (session) {
-          await session.abortTransaction();
-        }
-
-        return res.status(HTTP_STATUS.CONFLICT).json({
-          success: false,
-          message: `The slot on ${formatDateOnly(parsedDate)} at ${format12Hour(startTime)} - ${format12Hour(endTime)} is already booked by another member. Please choose a different slot.`,
+        // BUGFIX: A slot taken by someone else a moment ago used to abort the
+        // ENTIRE batch, discarding every other valid slot in this request.
+        // Instead, just skip this one slot and keep booking the rest.
+        skippedSlots.push({
+          sessionDate: formatDateOnly(parsedDate),
+          startTime,
+          endTime,
+          label: `${formatDateOnly(parsedDate)} at ${format12Hour(startTime)} - ${format12Hour(endTime)}`,
+          reason: 'Already booked by another member',
         });
+        continue;
       }
 
       // Create booking document
@@ -837,8 +863,28 @@ export const bookTrainerSession = asyncHandler(async (req, res) => {
       });
     }
 
+    // If every single requested slot turned out to be taken, there's nothing
+    // left to save — cleanly abort and tell the member which slots conflicted.
+    if (createdBookings.length === 0 && skippedSlots.length > 0) {
+      if (session && useTransaction) {
+        await session.abortTransaction();
+        session.endSession();
+        session = null;
+      }
+
+      return res.status(HTTP_STATUS.CONFLICT).json({
+        success: false,
+        message:
+          skippedSlots.length === 1
+            ? `The slot on ${skippedSlots[0].label} is already booked by another member. Please choose a different slot.`
+            : `All ${skippedSlots.length} selected slots were just booked by other members. Please choose different slots.`,
+        skippedSlots,
+      });
+    }
+
     // Update membership PT usage & active trainer assignment
     membership.ptSessionsUsedThisMonth = (membership.ptSessionsUsedThisMonth || 0) + createdBookings.length;
+    membership.trainerId = targetTrainerUserId;
     await membership.save(saveOpts);
 
     const assignmentQuery = TrainerAssignment.findOne({
@@ -854,6 +900,12 @@ export const bookTrainerSession = asyncHandler(async (req, res) => {
     const existingAssignment = await assignmentQuery;
 
     if (!existingAssignment) {
+      await TrainerAssignment.updateMany(
+        { memberId: userId, status: 'ACTIVE' },
+        { status: 'COMPLETED', completedAt: new Date() },
+        saveOpts
+      );
+
       await TrainerAssignment.create(
         [
           {
@@ -868,9 +920,23 @@ export const bookTrainerSession = asyncHandler(async (req, res) => {
       );
     }
 
-    // COMMIT TRANSACTION
-    if (session) {
+    // Sync totalClients on TrainerProfile for target trainer
+    const activeClientsCount = await TrainerAssignment.countDocuments({
+      trainerId: targetTrainerUserId,
+      status: 'ACTIVE',
+    }).session(session || null);
+
+    await TrainerProfile.updateOne(
+      { userId: targetTrainerUserId },
+      { $set: { totalClients: activeClientsCount } },
+      saveOpts
+    );
+
+    // COMMIT TRANSACTION IF ACTIVE
+    if (session && useTransaction) {
       await session.commitTransaction();
+      session.endSession();
+      session = null;
     }
 
     // Post-Commit Notifications
@@ -878,21 +944,32 @@ export const bookTrainerSession = asyncHandler(async (req, res) => {
       await Notification.create(notif).catch((err) => logger.warn(`Notification error: ${err.message}`));
     }
 
-    logger.info(`Successfully booked ${createdBookings.length} PT sessions for member ${userId}`);
+    logger.info(`Successfully booked ${createdBookings.length} PT sessions for member ${userId}` +
+      (skippedSlots.length ? `, ${skippedSlots.length} slot(s) skipped (already taken)` : ''));
+
+    let message;
+    if (skippedSlots.length > 0) {
+      // Partial success: some slots booked, some were taken by another member in the meantime.
+      message = `Booked ${createdBookings.length} of ${createdBookings.length + skippedSlots.length} sessions. ${skippedSlots.length} slot(s) were already booked by another member: ${skippedSlots.map((s) => s.label).join(', ')}.`;
+    } else {
+      message =
+        createdBookings.length === 1
+          ? 'Personal training session successfully booked and confirmed!'
+          : `Successfully confirmed ${createdBookings.length} personal training sessions!`;
+    }
 
     res.status(HTTP_STATUS.CREATED).json({
       success: true,
-      message:
-        createdBookings.length === 1
-          ? 'Personal training session successfully booked and confirmed!'
-          : `Successfully confirmed ${createdBookings.length} personal training sessions!`,
+      message,
       bookings: createdBookings,
       booking: createdBookings[0],
+      skippedSlots,
     });
   } catch (error) {
-    if (session) {
+    if (session && useTransaction) {
       try {
         await session.abortTransaction();
+        session.endSession();
       } catch (abortErr) {
         logger.warn(`Failed to abort transaction: ${abortErr.message}`);
       }
@@ -943,6 +1020,29 @@ export const cancelTrainerBooking = asyncHandler(async (req, res) => {
   booking.status = 'CANCELLED';
   booking.cancelledAt = new Date();
   await booking.save();
+
+  // Decrement member ptSessionsUsedThisMonth
+  if (booking.memberId?._id || booking.memberId) {
+    const memId = booking.memberId._id || booking.memberId;
+    const activeMem = await Membership.findOne({
+      $or: [{ userId: memId }, { memberId: memId }],
+      status: 'ACTIVE',
+    });
+    if (activeMem) {
+      activeMem.ptSessionsUsedThisMonth = Math.max(0, (activeMem.ptSessionsUsedThisMonth || 1) - 1);
+      await activeMem.save();
+    }
+  }
+
+  // Sync totalClients on TrainerProfile
+  if (booking.trainerId?._id || booking.trainerId) {
+    const trnId = booking.trainerId._id || booking.trainerId;
+    const activeClientsCount = await TrainerAssignment.countDocuments({
+      trainerId: trnId,
+      status: 'ACTIVE',
+    });
+    await TrainerProfile.updateOne({ userId: trnId }, { $set: { totalClients: activeClientsCount } });
+  }
 
   const formattedDate = formatDateOnly(booking.sessionDate);
   const formattedSlot = `${format12Hour(booking.startTime)} - ${format12Hour(booking.endTime)}`;
@@ -1458,6 +1558,25 @@ export const cancelRecurringSlot = asyncHandler(async (req, res) => {
     },
     { status: 'CANCELLED', cancelledAt: new Date() }
   );
+
+  // Decrement member ptSessionsUsedThisMonth
+  const activeMem = await Membership.findOne({
+    $or: [{ userId }, { memberId: userId }],
+    status: 'ACTIVE',
+  });
+  if (activeMem) {
+    activeMem.ptSessionsUsedThisMonth = Math.max(0, (activeMem.ptSessionsUsedThisMonth || 0) - result.modifiedCount);
+    await activeMem.save();
+  }
+
+  // Sync totalClients on TrainerProfile
+  if (sampleBooking?.trainerId) {
+    const activeClientsCount = await TrainerAssignment.countDocuments({
+      trainerId: sampleBooking.trainerId,
+      status: 'ACTIVE',
+    });
+    await TrainerProfile.updateOne({ userId: sampleBooking.trainerId }, { $set: { totalClients: activeClientsCount } });
+  }
 
   // Notify trainer
   await Notification.create({

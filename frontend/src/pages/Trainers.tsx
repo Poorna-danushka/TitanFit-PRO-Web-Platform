@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { trainerAPI } from '../api/apiService';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -11,8 +11,10 @@ import {
   Check,
   Trash2,
   UserCheck,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
-import { toast } from 'react-toastify';
+import { useUIStore } from '../stores/uiStore';
 
 interface Trainer {
   _id: string;
@@ -78,6 +80,7 @@ interface SelectedSlotInfo {
 
 export default function Trainers() {
   const navigate = useNavigate();
+  const addNotification = useUIStore((s) => s.addNotification);
   const [trainers, setTrainers] = useState<Trainer[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -102,8 +105,21 @@ export default function Trainers() {
   const [activeCoach, setActiveCoach] = useState<Trainer | null>(null);
 
   // Weekly Schedule State
-  const [targetDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
+  // weekOffset: 0 = current week, 1 = next week, 2 = week after, etc.
+  // Recurring bookings for a weekday that already passed this week land on
+  // NEXT week's occurrence, so users need to be able to page forward to see
+  // (and confirm) that the reservation actually landed.
+  const [weekOffset, setWeekOffset] = useState<number>(0);
+  const targetDate = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + weekOffset * 7);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }, [weekOffset]);
   const [weekDays, setWeekDays] = useState<ScheduleDay[]>([]);
+  const [weekRangeLabel, setWeekRangeLabel] = useState<string>('');
   const [memberWeeklyBookings, setMemberWeeklyBookings] = useState<number>(0);
   const [maxWeeklyLimit, setMaxWeeklyLimit] = useState<number>(4);
   const [slotsLoading, setSlotsLoading] = useState<boolean>(false);
@@ -116,6 +132,8 @@ export default function Trainers() {
   const [focusArea, setFocusArea] = useState('1-on-1 Coaching & Form Technique');
   const [bookingNotes, setBookingNotes] = useState('');
   const [bookingLoading, setBookingLoading] = useState(false);
+  const [bookingError, setBookingError] = useState<string | null>(null);
+  const bookingErrorRef = useRef<HTMLDivElement | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
 
@@ -189,10 +207,15 @@ export default function Trainers() {
           setWeekDays(res.data.days || []);
           setMemberWeeklyBookings(res.data.memberWeeklyBookings || 0);
           setMaxWeeklyLimit(res.data.maxWeeklyLimit || 4);
+          if (res.data.weekStart && res.data.weekEnd) {
+            setWeekRangeLabel(
+              `${new Date(res.data.weekStart + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${new Date(res.data.weekEnd + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+            );
+          }
         }
       } catch (err) {
         console.error('Error fetching coach weekly slots', err);
-        toast.error('Unable to load coach weekly schedule.');
+        addNotification('Unable to load coach weekly schedule.', 'error');
       } finally {
         setSlotsLoading(false);
       }
@@ -205,11 +228,11 @@ export default function Trainers() {
     try {
       const myTrnRes = await trainerAPI.getMyTrainer().catch(() => ({ data: null }));
       if (myTrnRes.data?.hasTrainer) {
-        setMyTrainerData((prev) => ({
-          trainer: prev?.trainer ?? myTrnRes.data.trainer,
+        setMyTrainerData({
+          trainer: myTrnRes.data.trainer,
           weeklyBookingsCount: myTrnRes.data.weeklyBookingsCount || 0,
           upcomingBookings: myTrnRes.data.upcomingBookings || [],
-        }));
+        });
       }
     } catch (err) {
       console.error('Failed to refresh trainer data', err);
@@ -229,11 +252,11 @@ export default function Trainers() {
     try {
       setActionLoading(trainerTargetId);
       const res = await trainerAPI.selectTrainer(trainerTargetId);
-      toast.success(res.data.message || 'Personal Trainer assigned successfully!');
+      addNotification(res.data.message || 'Personal Trainer assigned successfully!', 'success');
       setActiveCoach(trainer);
       await fetchInitialData();
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || 'Failed to assign coach.');
+      addNotification(error?.response?.data?.message || 'Failed to assign coach.', 'error');
     } finally {
       setActionLoading(null);
     }
@@ -255,8 +278,9 @@ export default function Trainers() {
       const totalSelectedCount = selectedSlots.length;
 
       if (currentActiveCount + totalSelectedCount >= maxWeeklyLimit) {
-        toast.warning(
-          `Weekly limit reached (${maxWeeklyLimit} / ${maxWeeklyLimit} sessions). You already have ${currentActiveCount} confirmed session(s) this week.`
+        addNotification(
+          `Weekly limit reached (${maxWeeklyLimit} / ${maxWeeklyLimit} sessions). You already have ${currentActiveCount} confirmed session(s) this week.`,
+          'warning'
         );
         return;
       }
@@ -289,14 +313,20 @@ export default function Trainers() {
 
   const handleConfirmAllBookings = async () => {
     if (!activeCoach || selectedSlots.length === 0) {
-      toast.error('Please select at least one available session.');
+      addNotification('Please select at least one available session.', 'error');
       return;
     }
 
-    const coachUserId = activeCoach.userId?._id || activeCoach._id;
+    const coachUserId =
+      typeof activeCoach.userId === 'object' && activeCoach.userId?._id
+        ? activeCoach.userId._id
+        : typeof activeCoach.userId === 'string'
+        ? activeCoach.userId
+        : activeCoach._id;
 
     try {
       setBookingLoading(true);
+      setBookingError(null);
       const res = await trainerAPI.multiBookSessions({
         trainerId: coachUserId,
         sessions: selectedSlots.map((s) => ({
@@ -312,18 +342,27 @@ export default function Trainers() {
         })),
       });
 
-      toast.success(res.data.message || '🎉 Personal training sessions successfully confirmed!');
+      const skipped = res.data.skippedSlots || [];
+      if (skipped.length > 0 && (res.data.bookings?.length || 0) > 0) {
+        // Partial success: some slots got grabbed by another member a moment
+        // before we confirmed, but everything else still went through.
+        addNotification(res.data.message, 'warning');
+      } else {
+        addNotification(res.data.message || '🎉 Personal training sessions successfully confirmed!', 'success');
+      }
       setConfirmationModalOpen(false);
       // Clear selection FIRST so slots immediately stop showing as purple
       setSelectedSlots([]);
 
       // Reload weekly grid slots to show new BOOKED_BY_ME status (green)
+      // and to reflect any slot another member just took (red/BOOKED).
       await loadCoachWeeklySlots(coachUserId, targetDate);
       // Refresh upcoming sessions list without disturbing activeCoach / weekDays
       await refreshMyTrainerData();
     } catch (error: any) {
       const msg = error?.response?.data?.message || 'Failed to complete booking. Please review your selections.';
-      toast.error(msg);
+      setBookingError(msg);
+      addNotification(msg, 'error');
       if (activeCoach) {
         await loadCoachWeeklySlots(coachUserId, targetDate);
       }
@@ -331,6 +370,12 @@ export default function Trainers() {
       setBookingLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (bookingError && bookingErrorRef.current) {
+      bookingErrorRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [bookingError]);
 
   const handleCancelBooking = async (bookingId: string, recurringSlotId?: string) => {
     const confirmMsg = recurringSlotId
@@ -349,7 +394,7 @@ export default function Trainers() {
       } else {
         res = await trainerAPI.cancelBooking(bookingId);
       }
-      toast.success(res.data.message || 'Session cancelled successfully.');
+      addNotification(res.data.message || 'Session cancelled successfully.', 'success');
       if (activeCoach) {
         const coachUserId = activeCoach.userId?._id || activeCoach._id;
         await loadCoachWeeklySlots(coachUserId, targetDate);
@@ -357,7 +402,7 @@ export default function Trainers() {
       // Refresh upcoming sessions without resetting slot grid
       await refreshMyTrainerData();
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Failed to cancel session.');
+      addNotification(err?.response?.data?.message || 'Failed to cancel session.', 'error');
     } finally {
       setCancellingId(null);
     }
@@ -583,12 +628,44 @@ export default function Trainers() {
 
           {selectedSlots.length > 0 && (
             <button
-              onClick={() => setConfirmationModalOpen(true)}
+              onClick={() => {
+                setBookingError(null);
+                setConfirmationModalOpen(true);
+              }}
               className="px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs rounded-xl transition-all shadow-lg shadow-emerald-700/30 flex items-center gap-2 shrink-0"
             >
               <Check className="w-4 h-4" /> Review & Confirm ({selectedSlots.length})
             </button>
           )}
+        </div>
+
+        {/* Week Navigation — a recurring pick on a weekday that already passed
+            this week lands on NEXT week's date, so members need a way to page
+            forward and actually see/confirm it landed. */}
+        <div className="flex items-center justify-between bg-[#111115]/90 border border-white/10 rounded-2xl px-4 py-2.5">
+          <button
+            type="button"
+            onClick={() => setWeekOffset((w) => Math.max(0, w - 1))}
+            disabled={weekOffset === 0}
+            className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-all"
+            aria-label="Previous week"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <div className="text-center">
+            <p className="text-xs font-bold text-white">
+              {weekOffset === 0 ? 'This Week' : weekOffset === 1 ? 'Next Week' : `${weekOffset} Weeks Ahead`}
+            </p>
+            {weekRangeLabel && <p className="text-[10px] text-gray-500 mt-0.5">{weekRangeLabel}</p>}
+          </div>
+          <button
+            type="button"
+            onClick={() => setWeekOffset((w) => w + 1)}
+            className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-all"
+            aria-label="Next week"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
         </div>
 
         {/* Weekly Grid (Monday to Sunday) */}
@@ -682,13 +759,33 @@ export default function Trainers() {
                         );
                       }
 
-                      if (slot.status === 'BOOKED') {
+                      if (slot.status === 'BOOKED' || slot.status === 'UNAVAILABLE') {
                         return (
                           <div
                             key={slot.startTime}
                             className="p-2.5 rounded-xl bg-white/[0.02] border border-white/5 text-center"
                           >
                             <p className="text-xs font-mono text-gray-600 line-through leading-tight">
+                              {slot.label}
+                            </p>
+                            <span className="text-[9px] uppercase font-sans text-gray-600 block mt-0.5">
+                              Unavailable
+                            </span>
+                          </div>
+                        );
+                      }
+
+                      // When the weekly limit is already full (confirmed + pending selection),
+                      // remaining unselected slots should appear non-interactive
+                      const weeklyLimitFull = memberWeeklyBookings + selectedSlots.length >= maxWeeklyLimit;
+                      if (!isSelected && weeklyLimitFull) {
+                        return (
+                          <div
+                            key={slot.startTime}
+                            className="p-2.5 rounded-xl bg-white/[0.02] border border-white/5 text-center opacity-50 cursor-not-allowed"
+                            title="Weekly booking limit reached"
+                          >
+                            <p className="text-xs font-mono text-gray-600 leading-tight">
                               {slot.label}
                             </p>
                             <span className="text-[9px] uppercase font-sans text-gray-600 block mt-0.5">
@@ -744,7 +841,7 @@ export default function Trainers() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="relative bg-[#111115] border border-purple-500/30 rounded-3xl max-w-lg w-full p-6 md:p-8 space-y-6 shadow-2xl"
+              className="relative bg-[#111115] border border-purple-500/30 rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 md:p-8 space-y-6 shadow-2xl"
             >
               <div className="flex items-center justify-between pb-3 border-b border-white/10">
                 <div>
@@ -795,6 +892,17 @@ export default function Trainers() {
                   ))}
                 </div>
               </div>
+
+              {/* Error Banner */}
+              {bookingError && (
+                <div
+                  ref={bookingErrorRef}
+                  className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-xs text-red-300 flex items-start gap-2"
+                >
+                  <span className="font-bold shrink-0">⚠</span>
+                  <span>{bookingError}</span>
+                </div>
+              )}
 
               {/* Focus Area */}
               <div>

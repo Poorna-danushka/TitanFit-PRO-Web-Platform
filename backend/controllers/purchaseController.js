@@ -8,7 +8,7 @@ import Notification from '../models/Notification.js';
 import TrainerAssignment from '../models/TrainerAssignment.js';
 import { sendPaymentReceipt } from '../utils/email.js';
 import logger from '../utils/logger.js';
-import { checkUserMembershipStatus } from '../utils/membershipHelper.js';
+import { checkUserMembershipStatus, calculateMembershipEndDate } from '../utils/membershipHelper.js';
 import { checkPlanIncludesPT } from '../utils/entitlements.js';
 
 /**
@@ -70,7 +70,7 @@ export const getMyPurchases = async (req, res) => {
  */
 export const createCardPurchase = async (req, res) => {
   try {
-    const { packageId, price } = req.body;
+    const { packageId, price, familyMembers } = req.body;
     const userId = req.userId;
 
     const user = await User.findById(userId);
@@ -96,6 +96,9 @@ export const createCardPurchase = async (req, res) => {
     });
     await payment.save();
 
+    // Formatted family members array if provided
+    const formattedFamilyMembers = Array.isArray(familyMembers) ? familyMembers : [];
+
     // Create active purchase record
     const purchase = new Purchase({
       userId,
@@ -104,6 +107,7 @@ export const createCardPurchase = async (req, res) => {
       paymentId: payment._id,
       paymentMethod: 'card',
       status: 'paid',
+      familyMembers: formattedFamilyMembers,
     });
     await purchase.save();
 
@@ -115,9 +119,7 @@ export const createCardPurchase = async (req, res) => {
 
     // Activate Membership
     const startDate = new Date();
-    const endDate = new Date();
-    const durationMonths = pkg?.durationMonths || (pkg?.durationDays ? Math.ceil(pkg.durationDays / 30) : 1);
-    endDate.setMonth(endDate.getMonth() + durationMonths);
+    const endDate = calculateMembershipEndDate(startDate, pkg);
 
     await Membership.create({
       memberId: userId,
@@ -129,6 +131,7 @@ export const createCardPurchase = async (req, res) => {
       startDate,
       endDate,
       status: 'ACTIVE',
+      familyMembers: formattedFamilyMembers,
     });
 
     // Check if plan includes personal training
@@ -184,7 +187,7 @@ export const createCardPurchase = async (req, res) => {
  */
 export const createBankTransferPurchase = async (req, res) => {
   try {
-    const { packageId, price, bankTransferReference, transferSlipUrl } = req.body;
+    const { packageId, price, bankTransferReference, transferSlipUrl, familyMembers } = req.body;
     const userId = req.userId;
 
     const user = await User.findById(userId);
@@ -197,6 +200,7 @@ export const createBankTransferPurchase = async (req, res) => {
 
     const packageName = pkg?.name || 'Gym Membership';
     const amount = price || pkg?.price || 0;
+    const formattedFamilyMembers = Array.isArray(familyMembers) ? familyMembers : [];
 
     // Create pending approval payment
     const payment = new Payment({
@@ -222,6 +226,7 @@ export const createBankTransferPurchase = async (req, res) => {
       bankTransferReference: bankTransferReference || 'REF-' + Date.now(),
       transferSlipUrl: transferSlipUrl || '',
       status: 'pending_approval',
+      familyMembers: formattedFamilyMembers,
     });
     await purchase.save();
 
@@ -294,9 +299,7 @@ export const approveBankTransfer = async (req, res) => {
 
     if (!membership) {
       const startDate = new Date();
-      const endDate = new Date();
-      const durationMonths = pkg?.durationMonths || (pkg?.durationDays ? Math.ceil(pkg.durationDays / 30) : 1);
-      endDate.setMonth(endDate.getMonth() + durationMonths);
+      const endDate = calculateMembershipEndDate(startDate, pkg);
 
       membership = await Membership.create({
         memberId: user._id,
@@ -308,6 +311,7 @@ export const approveBankTransfer = async (req, res) => {
         startDate,
         endDate,
         status: 'ACTIVE',
+        familyMembers: purchase.familyMembers || [],
       });
     }
 

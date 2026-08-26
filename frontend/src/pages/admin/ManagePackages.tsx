@@ -127,9 +127,14 @@ export default function ManagePackages() {
                           <span className="inline-block px-3 py-1 bg-blue-500/20 text-blue-400 rounded-full text-xs font-medium capitalize">
                             {pkg.level || 'Intermediate'} Level
                           </span>
-                          {pkg.exercises && pkg.exercises.length > 0 && (
-                            <span className="inline-block px-3 py-1 bg-purple-500/20 text-purple-400 rounded-full text-xs font-medium">
-                              {pkg.exercises.length} Exercises (~{pkg.totalDuration || 0} min)
+                          {(pkg.isFamilyPackage || pkg.name?.toLowerCase().includes('family')) && (
+                            <span className="inline-block px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-bold">
+                              Family Package
+                            </span>
+                          )}
+                          {pkg.hasPersonalTrainer && (
+                            <span className="inline-block px-3 py-1 bg-purple-500/20 text-purple-400 rounded-full text-xs font-bold">
+                              Includes Personal Trainer
                             </span>
                           )}
                           {itemsList.length > 0 && (

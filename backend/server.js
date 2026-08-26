@@ -22,13 +22,10 @@ import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 
 // Import routes
 import authRoutes from './routes/authRoutes.js';
-import exerciseRoutes from './routes/exerciseRoutes.js';
 import packageRoutes from './routes/packageRoutes.js';
 import purchaseRoutes from './routes/purchaseRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
-import completedExerciseRoutes from './routes/completedExerciseRoutes.js';
 import userRoutes from './routes/userRoutes.js';
-import workoutRoutes from './routes/workoutRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import memberRoutes from './routes/memberRoutes.js';
 import membershipRoutes from './routes/membershipRoutes.js';
@@ -83,13 +80,10 @@ app.get('/api/health', (req, res) => {
 const apiPrefix = process.env.API_PREFIX || '/api/v1';
 
 app.use(`${apiPrefix}/auth`, authLimiter, authRoutes);
-app.use(`${apiPrefix}/exercises`, exerciseRoutes);
 app.use(`${apiPrefix}/packages`, packageRoutes);
 app.use(`${apiPrefix}/purchases`, purchaseRoutes);
 app.use(`${apiPrefix}/payments`, paymentRoutes);
-app.use(`${apiPrefix}/completed-exercises`, completedExerciseRoutes);
 app.use(`${apiPrefix}/users`, userRoutes);
-app.use(`${apiPrefix}/workouts`, workoutRoutes);
 app.use(`${apiPrefix}/notifications`, notificationRoutes);
 app.use(`${apiPrefix}/members`, memberRoutes);
 app.use(`${apiPrefix}/memberships`, membershipRoutes);

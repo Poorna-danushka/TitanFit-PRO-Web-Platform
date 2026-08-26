@@ -8,18 +8,14 @@ import StaffDashboard from './pages/StaffDashboard';
 import TrainerDashboard from './pages/TrainerDashboard';
 import PackageList from './pages/PackageList';
 import MyPackage from './pages/MyPackage';
-import ExerciseView from './pages/ExerciseView';
 import Profile from './pages/Profile';
-import Workouts from './pages/Workouts';
 import Trainers from './pages/Trainers';
 import AttendanceQR from './pages/AttendanceQR';
-import ProgressPage from './pages/ProgressPage';
 
 import UserNotificationsPage from './pages/UserNotificationsPage';
 
 import AdminDashboard from './pages/admin/AdminDashboard';
 import ManagePackages from './pages/admin/ManagePackages';
-import ManageExercises from './pages/admin/ManageExercises';
 import ManageUsers from './pages/admin/ManageUsers';
 import ManagePurchases from './pages/admin/ManagePurchases';
 import ManageNotifications from './pages/admin/ManageNotifications';
@@ -107,12 +103,8 @@ function App() {
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/packages" element={<PackageList />} />
               <Route path="/my-package" element={<MyPackage />} />
-              <Route path="/workouts" element={<Workouts />} />
               <Route path="/trainers" element={<PTRoute><Trainers /></PTRoute>} />
               <Route path="/attendance-qr" element={<AttendanceQR />} />
-              <Route path="/progress" element={<ProgressPage />} />
-
-              <Route path="/exercises/:id" element={<ExerciseView />} />
             </Route>
           </Route>
 
@@ -136,7 +128,6 @@ function App() {
             <Route element={<AdminLayout />}>
               <Route path="dashboard" element={<AdminDashboard />} />
               <Route path="packages" element={<ManagePackages />} />
-              <Route path="exercises" element={<ManageExercises />} />
               <Route path="users" element={<ManageUsers />} />
               <Route path="purchases" element={<ManagePurchases />} />
               <Route path="notifications" element={<ManageNotifications />} />

@@ -9,7 +9,6 @@ import {
   Sparkles,
   RotateCcw,
   Dumbbell,
-  Apple,
   Flame,
   Moon,
   LogIn,
@@ -36,10 +35,10 @@ function isPersonalQuery(text: string): boolean {
 
 /* ─── Quick-action chips ─────────────────────────────────────── */
 const QUICK_ACTIONS = [
-  { icon: Dumbbell, label: 'Suggest a workout', prompt: 'Suggest a full-body workout I can do at the gym today.' },
-  { icon: Apple,    label: 'Nutrition tips',    prompt: 'Give me practical nutrition tips to support muscle building.' },
-  { icon: Flame,    label: 'Burn fat fast',     prompt: 'What are the best exercises and strategies to burn fat quickly?' },
-  { icon: Moon,     label: 'Recovery advice',   prompt: 'How should I recover after an intense workout session?' },
+  { icon: Sparkles, label: 'Available Plans',   prompt: 'What membership plans and packages are available?' },
+  { icon: Moon,     label: 'Membership Expiry', prompt: 'When does my membership expire?' },
+  { icon: Flame,    label: 'Gym Attendance',    prompt: 'Show my gym attendance and check-in history.' },
+  { icon: Dumbbell, label: 'Personal Trainer',  prompt: 'Check my personal trainer session bookings.' },
 ];
 
 /* ─── Typing dots animation ──────────────────────────────────── */
@@ -275,9 +274,9 @@ export default function ChatBot({ isPublic = false }: ChatBotProps) {
               <div className="chatbot-welcome-icon">
                 <Bot size={32} />
               </div>
-              <h3 className="chatbot-welcome-title">Hey there! Ask me anything 💬</h3>
+              <h3 className="chatbot-welcome-title">Welcome to TitanFit Pro AI! 💬</h3>
               <p className="chatbot-welcome-sub">
-                I'm FitBot — your AI assistant. I can help with workouts, nutrition, coding, science, math, general knowledge, and anything else you're curious about.
+                I'm FitBot — your official gym assistant. Ask me about available membership plans, your expiry date, attendance records, digital entry pass, or personal trainer bookings.
               </p>
               <div className="chatbot-chips">
                 {QUICK_ACTIONS.map(({ icon: Icon, label, prompt }) => (

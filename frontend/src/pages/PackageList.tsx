@@ -371,6 +371,7 @@ export default function PackageList() {
             packageId={selectedPkg._id}
             packageName={selectedPkg.name}
             price={selectedPkg.price}
+            isFamilyPackage={Boolean(selectedPkg.isFamilyPackage || selectedPkg.name?.toLowerCase().includes('family'))}
           />
         )}
       </div>

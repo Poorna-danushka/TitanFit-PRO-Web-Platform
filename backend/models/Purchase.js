@@ -35,6 +35,14 @@ const purchaseSchema = new mongoose.Schema(
     },
     bankTransferReference: String,
     transferSlipUrl: String,
+    familyMembers: [
+      {
+        name: { type: String, required: true },
+        age: { type: Number },
+        relationship: { type: String },
+        phone: { type: String },
+      },
+    ],
     purchaseDate: {
       type: Date,
       default: Date.now,

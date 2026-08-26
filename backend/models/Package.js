@@ -24,14 +24,13 @@ const packageSchema = new mongoose.Schema(
       enum: ['beginner', 'intermediate', 'advanced'],
       default: 'intermediate',
     },
-    totalDuration: {
-      type: Number,
-      default: 0,
-      description: 'Total duration in minutes for all exercises',
+    isFamilyPackage: {
+      type: Boolean,
+      default: false,
     },
-    totalExercises: {
+    maxFamilyMembers: {
       type: Number,
-      default: 0,
+      default: 4,
     },
     image: {
       type: String,

@@ -17,14 +17,43 @@ export const DAY_ABBR = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 export const ORDERED_WEEK_DAYS = [1, 2, 3, 4, 5, 6, 0];
 
 /**
- * Format a Date to YYYY-MM-DD
+ * Format a Date to YYYY-MM-DD cleanly without timezone shift
  */
 export const formatDateOnly = (d) => {
+  if (!d) return '';
+  if (typeof d === 'string') {
+    if (/^\d{4}-\d{2}-\d{2}/.test(d)) {
+      return d.split('T')[0];
+    }
+  }
   const date = new Date(d);
+  if (isNaN(date.getTime())) return '';
+
+  // If UTC midnight (standard MongoDB stored Date), use UTC getters
+  if (date.getUTCHours() === 0 && date.getUTCMinutes() === 0 && date.getUTCSeconds() === 0) {
+    const year = date.getUTCFullYear();
+    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(date.getUTCDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
+};
+
+/**
+ * Safely parse a date string (YYYY-MM-DD) or Date object into a local Date at 00:00:00 without UTC shift
+ */
+export const parseLocalDate = (dateInput) => {
+  if (!dateInput) return new Date();
+  if (dateInput instanceof Date) return new Date(dateInput);
+  if (typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}/.test(dateInput)) {
+    const [y, m, d] = dateInput.split('T')[0].split('-').map((n) => parseInt(n, 10));
+    return new Date(y, m - 1, d, 0, 0, 0, 0);
+  }
+  return new Date(dateInput);
 };
 
 /**
@@ -179,15 +208,36 @@ export const generateHourlySlots = (startTime, endTime) => {
 };
 
 /**
- * Count member's active confirmed bookings in a given calendar week
+ * Count member's active confirmed bookings that count toward the 4-per-week
+ * cap for a given calendar week.
+ *
+ * A recurring weekly pick is a standing commitment from the moment it's
+ * booked — it occupies one of the member's 4 weekly slots every week going
+ * forward, not just in weeks where a dated document happens to already
+ * exist for it (the first occurrence of a freshly-picked recurring slot can
+ * land in a future week relative to "today"). So recurring slots are
+ * counted once per distinct recurringSlotId, independent of weekStart/
+ * weekEnd. One-off (non-recurring) bookings still only count for the
+ * specific week their literal date falls in.
  */
 export const getMemberWeeklyBookingCount = async (memberId, weekStart, weekEnd) => {
   if (!memberId) return 0;
-  return await PersonalTrainingBooking.countDocuments({
+
+  const recurringSlotIds = await PersonalTrainingBooking.distinct('recurringSlotId', {
     memberId,
-    sessionDate: { $gte: weekStart, $lte: weekEnd },
     status: 'CONFIRMED',
+    isRecurring: true,
+    recurringSlotId: { $ne: null },
   });
+
+  const oneOffCount = await PersonalTrainingBooking.countDocuments({
+    memberId,
+    status: 'CONFIRMED',
+    sessionDate: { $gte: weekStart, $lte: weekEnd },
+    $or: [{ isRecurring: { $ne: true } }, { isRecurring: { $exists: false } }],
+  });
+
+  return recurringSlotIds.length + oneOffCount;
 };
 
 /**
@@ -203,8 +253,9 @@ export const getCoachWeeklySchedule = async (trainerUserId, dateInput, currentUs
     ruleMap.set(r.dayOfWeek, r);
   });
 
-  // 2. Fetch all confirmed bookings for this coach in this week range
-  const bookings = await PersonalTrainingBooking.find({
+  // 2. Fetch confirmed bookings whose literal date falls in this displayed
+  //    week (covers one-off, non-recurring sessions).
+  const bookingsInRange = await PersonalTrainingBooking.find({
     trainerId: trainerUserId,
     sessionDate: { $gte: weekInfo.weekStart, $lte: weekInfo.weekEnd },
     status: 'CONFIRMED',
@@ -214,10 +265,41 @@ export const getCoachWeeklySchedule = async (trainerUserId, dateInput, currentUs
 
   // Map bookings by "YYYY-MM-DD_startTime"
   const bookingMap = new Map();
-  bookings.forEach((b) => {
+  bookingsInRange.forEach((b) => {
     const dStr = formatDateOnly(b.sessionDate);
     const sTime = normalizeTime24(b.startTime) || b.startTime;
     bookingMap.set(`${dStr}_${sTime}`, b);
+  });
+
+  // 2b. Separately fetch ALL active recurring reservations for this coach,
+  // regardless of which date their documents happen to fall on. A weekly
+  // recurring pick is a standing "day-of-week + time" reservation — its
+  // first occurrence can land in a future week (e.g. the member picked
+  // Monday after Monday had already passed this week), so the displayed
+  // week's grid must still show that slot as reserved even though no
+  // booking document for THIS week's date exists yet.
+  const recurringBookings = await PersonalTrainingBooking.find({
+    trainerId: trainerUserId,
+    status: 'CONFIRMED',
+    isRecurring: true,
+  })
+    .populate('memberId', 'firstName lastName name profileImage email')
+    .sort({ sessionDate: 1 })
+    .lean();
+
+  // Map by "dayOfWeek_startTime" -> earliest matching booking (any occurrence
+  // works as a representative, since they all share the same recurringSlotId
+  // and memberId).
+  const recurringPatternMap = new Map();
+  recurringBookings.forEach((b) => {
+    const sTime = normalizeTime24(b.startTime) || b.startTime;
+    const dow = b.dayOfWeek !== undefined && b.dayOfWeek !== null
+      ? b.dayOfWeek
+      : parseLocalDate(formatDateOnly(b.sessionDate)).getDay();
+    const key = `${dow}_${sTime}`;
+    if (!recurringPatternMap.has(key)) {
+      recurringPatternMap.set(key, b);
+    }
   });
 
   let totalAvailableSlotsInWeek = 0;
@@ -243,7 +325,8 @@ export const getCoachWeeklySchedule = async (trainerUserId, dateInput, currentUs
       slots = generated.map((slot) => {
         totalAvailableSlotsInWeek++;
         const bookingKey = `${day.date}_${slot.startTime}`;
-        const existingBooking = bookingMap.get(bookingKey);
+        const recurringKey = `${day.dayOfWeek}_${slot.startTime}`;
+        const existingBooking = recurringPatternMap.get(recurringKey) || bookingMap.get(bookingKey);
 
         let status = 'AVAILABLE';
         let isBooked = false;
@@ -258,10 +341,17 @@ export const getCoachWeeklySchedule = async (trainerUserId, dateInput, currentUs
           bookingId = existingBooking._id;
           recurringSlotId = existingBooking.recurringSlotId || null;
 
-          if (currentUserId && existingBooking.memberId && existingBooking.memberId._id.toString() === currentUserId.toString()) {
+          const existingMemberIdStr = existingBooking.memberId?._id
+            ? existingBooking.memberId._id.toString()
+            : (existingBooking.memberId ? existingBooking.memberId.toString() : null);
+
+          const currentUserIdStr = currentUserId ? currentUserId.toString() : null;
+
+          if (currentUserIdStr && existingMemberIdStr && existingMemberIdStr === currentUserIdStr) {
             isBookedByMe = true;
             status = 'BOOKED_BY_ME';
           } else {
+            isBookedByMe = false;
             status = 'BOOKED';
           }
 

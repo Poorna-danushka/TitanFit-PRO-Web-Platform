@@ -124,16 +124,6 @@ export const authAPI = {
     api.post('/auth/forgot-password', { email }),
 };
 
-// ─── Exercise API ─────────────────────────────────────────────────────────────
-
-export const exerciseAPI = {
-  getAll: () => api.get('/exercises'),
-  getById: (id: string) => api.get(`/exercises/${id}`),
-  create: (data: unknown) => api.post('/exercises', data),
-  update: (id: string, data: unknown) => api.put(`/exercises/${id}`, data),
-  delete: (id: string) => api.delete(`/exercises/${id}`),
-};
-
 // ─── Package API ──────────────────────────────────────────────────────────────
 
 export const packageAPI = {
@@ -142,16 +132,6 @@ export const packageAPI = {
   create: (data: unknown) => api.post('/packages', data),
   update: (id: string, data: unknown) => api.put(`/packages/${id}`, data),
   delete: (id: string) => api.delete(`/packages/${id}`),
-  
-  // Exercise management
-  getExercises: (packageId: string) => api.get(`/packages/${packageId}/exercises`),
-  addExercise: (packageId: string, data: unknown) => api.post(`/packages/${packageId}/exercises`, data),
-  updateExercise: (packageId: string, exerciseId: string, data: unknown) => 
-    api.put(`/packages/${packageId}/exercises/${exerciseId}`, data),
-  removeExercise: (packageId: string, exerciseId: string) => 
-    api.delete(`/packages/${packageId}/exercises/${exerciseId}`),
-  reorderExercises: (packageId: string, data: unknown) => 
-    api.put(`/packages/${packageId}/exercises/reorder`, data),
 };
 
 // ─── Purchase API ─────────────────────────────────────────────────────────────
@@ -160,10 +140,17 @@ export const purchaseAPI = {
   getAll: () => api.get('/purchases'),
   getMy: () => api.get('/purchases/my-purchases'),
   getMyPurchases: () => api.get('/purchases/my-purchases'),
-  create: (packageId: string, price: number) =>
-    api.post('/purchases', { packageId, price }),
-  cardPayment: (data: { packageId: string; price: number }) => api.post('/purchases/card', data),
-  bankTransferPayment: (data: { packageId: string; price: number; bankTransferReference?: string; transferSlipUrl?: string }) => api.post('/purchases/bank-transfer', data),
+  create: (packageId: string, price: number, familyMembers?: any[]) =>
+    api.post('/purchases', { packageId, price, familyMembers }),
+  cardPayment: (data: { packageId: string; price: number; familyMembers?: any[] }) =>
+    api.post('/purchases/card', data),
+  bankTransferPayment: (data: {
+    packageId: string;
+    price: number;
+    bankTransferReference?: string;
+    transferSlipUrl?: string;
+    familyMembers?: any[];
+  }) => api.post('/purchases/bank-transfer', data),
   createWithPayment: (packageId: string, paymentIntentId: string) =>
     api.post('/purchases/payment', { packageId, paymentIntentId }),
   updateStatus: (id: string, status: string) =>
@@ -180,14 +167,6 @@ export const paymentAPI = {
   getHistory: () => api.get('/payments/history'),
   refund: (paymentIntentId: string) =>
     api.post('/payments/refund', { paymentIntentId }),
-};
-
-// ─── Completed Exercise API ───────────────────────────────────────────────────
-
-export const completedExerciseAPI = {
-  markComplete: (exerciseId: string) =>
-    api.post('/completed-exercises', { exerciseId }),
-  getMy: () => api.get('/completed-exercises/my-completed'),
 };
 
 // ─── User API (Admin) ─────────────────────────────────────────────────────────
@@ -209,31 +188,9 @@ export const adminAPI = {
   getAllPurchases: () => api.get('/purchases'),
   approveBankTransfer: (purchaseId: string) => api.put(`/purchases/${purchaseId}/approve-bank-transfer`),
   rejectBankTransfer: (purchaseId: string) => api.put(`/purchases/${purchaseId}/reject-bank-transfer`),
-  getAllExercises: () => api.get('/exercises'),
   createPackage: (data: unknown) => api.post('/packages', data),
   updatePackage: (id: string, data: unknown) => api.put(`/packages/${id}`, data),
   deletePackage: (id: string) => api.delete(`/packages/${id}`),
-  createExercise: (data: unknown) => api.post('/exercises', data),
-  updateExercise: (id: string, data: unknown) => api.put(`/exercises/${id}`, data),
-  deleteExercise: (id: string) => api.delete(`/exercises/${id}`),
-};
-
-// ─── Workout API ──────────────────────────────────────────────────────────────
-
-export const workoutAPI = {
-  getAll: () => api.get('/workouts'),
-  getById: (id: string) => api.get(`/workouts/${id}`),
-  create: (data: {
-    exerciseId: string;
-    duration: number;
-    sets?: number | null;
-    reps?: number | null;
-    date: string;
-    difficulty?: string | null; // beginner | intermediate | advanced
-  }) => api.post('/workouts', data),
-  update: (id: string, data: unknown) => api.put(`/workouts/${id}`, data),
-  delete: (id: string) => api.delete(`/workouts/${id}`),
-  getMy: () => api.get('/workouts/my-workouts'),
 };
 
 // ─── Notification API ───────────────────────────────────────────────────────────

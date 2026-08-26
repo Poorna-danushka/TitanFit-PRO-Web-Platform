@@ -3,6 +3,7 @@ import { purchaseAPI } from '../api/apiService';
 import { useNotification } from '../hooks/useUI';
 import { Loader2, X, ShieldCheck, CreditCard, Building2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import FamilyMemberForm, { FamilyMember } from './FamilyMemberForm';
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -11,6 +12,7 @@ interface PaymentModalProps {
   packageId: string;
   packageName: string;
   price: number;
+  isFamilyPackage?: boolean;
 }
 
 export default function PaymentModal({
@@ -20,12 +22,18 @@ export default function PaymentModal({
   packageId,
   packageName,
   price,
+  isFamilyPackage = false,
 }: PaymentModalProps) {
   const [activeTab, setActiveTab] = useState<'CARD' | 'BANK_TRANSFER'>('CARD');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [submittedBankTransfer, setSubmittedBankTransfer] = useState(false);
   const { success } = useNotification();
+
+  const isFamily = isFamilyPackage || packageName.toLowerCase().includes('family');
+
+  // Family Members State
+  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
 
   // Card Form State
   const [cardName, setCardName] = useState('');
@@ -39,13 +47,34 @@ export default function PaymentModal({
 
   if (!isOpen) return null;
 
+  const validateFamilyMembers = () => {
+    if (!isFamily) return true;
+    if (familyMembers.length === 0) {
+      setError('Please add at least one family member detail for the Family Package.');
+      return false;
+    }
+    for (let i = 0; i < familyMembers.length; i++) {
+      if (!familyMembers[i].name.trim()) {
+        setError(`Please fill in the full name for Family Member #${i + 1}.`);
+        return false;
+      }
+    }
+    return true;
+  };
+
   const handleCardSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validateFamilyMembers()) return;
+
     setLoading(true);
     setError('');
 
     try {
-      const res = await purchaseAPI.cardPayment({ packageId, price });
+      const res = await purchaseAPI.cardPayment({
+        packageId,
+        price,
+        familyMembers: isFamily ? familyMembers : [],
+      });
       success(res.data.message || 'Card payment processed & receipt emailed!');
       onSuccess(res.data);
     } catch (err: any) {
@@ -57,6 +86,7 @@ export default function PaymentModal({
 
   const handleBankTransferSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validateFamilyMembers()) return;
     if (!bankRef.trim()) {
       setError('Please enter your Bank Transfer Reference / Transaction ID.');
       return;
@@ -71,6 +101,7 @@ export default function PaymentModal({
         price,
         bankTransferReference: bankRef.trim(),
         transferSlipUrl: slipRef.trim(),
+        familyMembers: isFamily ? familyMembers : [],
       });
       setSubmittedBankTransfer(true);
       success(res.data.message || 'Bank transfer submitted for admin approval!');
@@ -126,6 +157,15 @@ export default function PaymentModal({
                 <p className="text-2xl font-black text-green-400">LKR {(price || 0).toLocaleString()}</p>
               </div>
             </div>
+
+            {/* Family Member Form if Family Package */}
+            {isFamily && (
+              <FamilyMemberForm
+                members={familyMembers}
+                onChange={setFamilyMembers}
+                maxMembers={4}
+              />
+            )}
 
             {/* Payment Method Tabs */}
             <div className="grid grid-cols-2 gap-3 p-1.5 bg-gray-950 rounded-2xl border border-gray-800">

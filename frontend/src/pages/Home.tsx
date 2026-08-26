@@ -3,13 +3,12 @@ import LogoIcon from '../components/LogoIcon';
 import { Link } from 'react-router-dom';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { Activity, Dumbbell, CalendarCheck, ShieldCheck, ArrowRight, Zap, Check, Sparkles, X } from 'lucide-react';
-import { packageAPI, exerciseAPI, trainerAPI } from '../api/apiService';
+import { packageAPI, trainerAPI } from '../api/apiService';
 import { Award, Star } from 'lucide-react';
 import ChatBot from '../components/ChatBot';
 
 const Home = () => {
   const [packages, setPackages] = useState<any[]>([]);
-  const [exercises, setExercises] = useState<any[]>([]);
   const [trainers, setTrainers] = useState<any[]>([]);
   const [loadingTrainers, setLoadingTrainers] = useState<boolean>(true);
   const { scrollYProgress } = useScroll();
@@ -18,13 +17,11 @@ const Home = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [pkgRes, exRes, trnRes] = await Promise.all([
+        const [pkgRes, trnRes] = await Promise.all([
           packageAPI.getAll().catch(() => ({ data: { packages: [] } })),
-          exerciseAPI.getAll().catch(() => ({ data: { exercises: [] } })),
           trainerAPI.getAll().catch(() => ({ data: { trainers: [] } })),
         ]);
         setPackages(pkgRes.data.packages || []);
-        setExercises(exRes.data.exercises?.slice(0, 4) || []);
         setTrainers(trnRes.data.trainers || trnRes.data.data || []);
       } catch (error) {
         console.error('Failed to fetch data for home page', error);
@@ -81,10 +78,6 @@ const Home = () => {
             </a>
             <a href="#trainers" className="hover:text-white transition-colors relative group">
               Trainers
-              <span className="absolute -bottom-2 left-0 w-0 h-0.5 bg-green-500 transition-all group-hover:w-full" />
-            </a>
-            <a href="#exercises" className="hover:text-white transition-colors relative group">
-              Library
               <span className="absolute -bottom-2 left-0 w-0 h-0.5 bg-green-500 transition-all group-hover:w-full" />
             </a>
           </div>
@@ -521,43 +514,6 @@ const Home = () => {
               <Sparkles className="w-4 h-4 text-purple-400" />
               <span>Personal training sessions are available to members who purchase an eligible membership plan.</span>
             </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Exercises Preview */}
-      <section id="exercises" className="py-32">
-        <div className="max-w-7xl mx-auto px-6">
-          <motion.div {...fadeIn} className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
-            <div>
-              <h2 className="text-4xl md:text-5xl font-extrabold mb-6 tracking-tight">Massive Library</h2>
-              <p className="text-xl text-gray-400 max-w-xl">Master your form with high-quality visual guides for every muscle group.</p>
-            </div>
-            <Link to="/register" className="text-green-400 font-bold hover:text-green-300 flex items-center gap-2 group">
-              View All Exercises <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
-            </Link>
-          </motion.div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {exercises.map((ex: any, idx: number) => (
-              <motion.div 
-                key={ex._id}
-                initial={{ opacity: 0, scale: 0.9 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: idx * 0.1 }}
-                className="group relative rounded-3xl overflow-hidden bg-gray-900 aspect-[4/5] cursor-pointer"
-              >
-                <img src={ex.image} alt={ex.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 opacity-70 group-hover:opacity-40" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
-                <div className="absolute bottom-0 left-0 p-8 w-full transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-                  <span className="px-3 py-1.5 bg-black/50 backdrop-blur-md text-white border border-white/10 text-[10px] font-bold rounded-lg mb-4 inline-block uppercase tracking-widest shadow-xl">
-                    {ex.muscleGroup}
-                  </span>
-                  <h3 className="text-2xl font-bold text-white group-hover:text-green-400 transition-colors">{ex.name}</h3>
-                </div>
-              </motion.div>
-            ))}
           </div>
         </div>
       </section>

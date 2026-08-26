@@ -20,6 +20,48 @@ import Purchase from '../models/Purchase.js';
  *   message: string|null
  * }>}
  */
+/**
+ * Calculates exact membership endDate based on package duration string or durationMonths / durationDays.
+ */
+export const calculateMembershipEndDate = (startDate = new Date(), pkg) => {
+  const end = new Date(startDate);
+  if (!pkg) {
+    end.setMonth(end.getMonth() + 1);
+    return end;
+  }
+
+  if (typeof pkg.durationMonths === 'number' && pkg.durationMonths > 0) {
+    end.setMonth(end.getMonth() + pkg.durationMonths);
+    return end;
+  }
+
+  if (typeof pkg.durationDays === 'number' && pkg.durationDays > 0) {
+    end.setDate(end.getDate() + pkg.durationDays);
+    return end;
+  }
+
+  const durationStr = String(pkg.duration || '').toLowerCase();
+
+  if (durationStr.includes('year') || durationStr.includes('annual')) {
+    const match = durationStr.match(/(\d+)\s*year/);
+    const years = match ? parseInt(match[1]) : 1;
+    end.setFullYear(end.getFullYear() + years);
+  } else if (durationStr.includes('day')) {
+    const match = durationStr.match(/(\d+)\s*day/);
+    const days = match ? parseInt(match[1]) : 30;
+    end.setDate(end.getDate() + days);
+  } else if (durationStr.includes('month')) {
+    const match = durationStr.match(/(\d+)\s*month/);
+    const months = match ? parseInt(match[1]) : 1;
+    end.setMonth(end.getMonth() + months);
+  } else {
+    // Default 1 month
+    end.setMonth(end.getMonth() + 1);
+  }
+
+  return end;
+};
+
 export const checkUserMembershipStatus = async (userId) => {
   if (!userId) {
     return {
@@ -33,6 +75,12 @@ export const checkUserMembershipStatus = async (userId) => {
   }
 
   const now = new Date();
+
+  // Auto-expire active memberships whose endDate has passed
+  await Membership.updateMany(
+    { $or: [{ userId }, { memberId: userId }], status: 'ACTIVE', endDate: { $lte: now } },
+    { status: 'EXPIRED' }
+  ).catch(() => {});
 
   // Step A: Find the user's latest valid ACTIVE membership
   const activeMembership = await Membership.findOne({
@@ -80,4 +128,5 @@ export const checkUserMembershipStatus = async (userId) => {
 
 export default {
   checkUserMembershipStatus,
+  calculateMembershipEndDate,
 };
