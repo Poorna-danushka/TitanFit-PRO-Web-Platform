@@ -73,9 +73,13 @@ const startWithCron = (cronExpr, retentionDays = 30, runOnStart = false) => {
       try {
         logger.info('Running initial backup on scheduler start.');
         const r = await createDatabaseBackup({ label: 'startup' });
-        logger.info(`Startup backup uploaded: ${r.backupKey}`);
-        await deleteOldBackups(retentionDays);
-        await BackupSetting.updateOne({}, { $set: { lastRunAt: new Date() } });
+        if (r.success) {
+          logger.info(`Startup backup uploaded: ${r.backupKey}`);
+          await deleteOldBackups(retentionDays);
+          await BackupSetting.updateOne({}, { $set: { lastRunAt: new Date() } });
+        } else {
+          logger.info(`Startup backup status: ${r.message}`);
+        }
       } catch (err) {
         logger.error(`Startup backup failed: ${err.message}`);
       }
