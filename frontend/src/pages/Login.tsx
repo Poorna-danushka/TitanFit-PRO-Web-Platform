@@ -13,6 +13,7 @@ import {
 } from '../utils/security';
 
 import LogoIcon from '../components/LogoIcon';
+import BackButton from '../components/BackButton';
 
 export default function Login() {
   const [formData, setFormData] = useState({ email: '', password: '' });
@@ -170,6 +171,10 @@ export default function Login() {
           transition={{ duration: 0.5 }}
           className="relative z-10 w-full max-w-md"
         >
+          <div className="flex items-center justify-between mb-8">
+            <BackButton fallbackPath="/" label="Back to Home" />
+          </div>
+
           <Link to="/" className="flex items-center gap-2.5 mb-10 justify-center lg:justify-start group">
             <LogoIcon size="lg" variant="titanium" />
             <span className="text-2xl brand-logo-title tracking-tight text-white flex items-center gap-2 font-extrabold">

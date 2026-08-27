@@ -22,6 +22,7 @@ import ManageNotifications from './pages/admin/ManageNotifications';
 import BackupSettings from './pages/admin/BackupSettings';
 
 import ForceChangePassword from './pages/ForceChangePassword';
+import NotFound from './pages/NotFound';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
@@ -136,8 +137,8 @@ function App() {
             </Route>
           </Route>
 
-          {/* Catch-all */}
-          <Route path="*" element={<Navigate to="/" replace />} />
+          {/* Catch-all route showing clean 404 page */}
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </Router>
     </AuthProvider>

@@ -3,6 +3,7 @@ import { purchaseAPI } from '../api/apiService';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ShieldAlert, CheckCircle2, Clock, Building2, AlertCircle, ArrowRight, Users, Sparkles, Check } from 'lucide-react';
+import BackButton from '../components/BackButton';
 
 export default function MyPackage() {
   const [activePurchase, setActivePurchase] = useState<any>(null);
@@ -48,6 +49,10 @@ export default function MyPackage() {
 
     return (
       <div className="pb-16 text-white max-w-4xl mx-auto space-y-8 relative min-h-[85vh]">
+        <div className="flex items-center justify-between">
+          <BackButton fallbackPath="/dashboard" />
+        </div>
+
         {/* Background Ambient Glow */}
         <div className="absolute top-0 left-10 w-80 h-80 bg-amber-500/10 blur-[130px] rounded-full pointer-events-none -z-10" />
 
@@ -197,7 +202,10 @@ export default function MyPackage() {
   // Case 2: No Active Package and No Pending Bank Transfer
   if (!activePurchase) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-8">
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-8 relative">
+        <div className="absolute top-4 left-4">
+          <BackButton fallbackPath="/dashboard" />
+        </div>
         <div className="w-24 h-24 bg-white/5 rounded-3xl border border-white/10 flex items-center justify-center mb-6 shadow-xl">
           <ShieldAlert className="w-12 h-12 text-gray-500" />
         </div>
@@ -216,6 +224,10 @@ export default function MyPackage() {
 
   return (
     <div className="pb-16 text-white max-w-4xl mx-auto space-y-8 relative min-h-[85vh]">
+      <div className="flex items-center justify-between">
+        <BackButton fallbackPath="/dashboard" />
+      </div>
+
       {/* Ambient Glow */}
       <div className="absolute top-0 left-10 w-80 h-80 bg-emerald-500/10 blur-[130px] rounded-full pointer-events-none -z-10" />
 

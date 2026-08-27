@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { adminAPI } from '../../api/apiService';
 import Pagination from '../../components/Pagination';
+import BackButton from '../../components/BackButton';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -284,6 +285,10 @@ export default function BackupSettings() {
       <ToastBar toasts={toasts} dismiss={dismissToast} />
 
       <div className="space-y-8 pb-16 relative text-white min-h-[85vh]">
+        <div className="flex items-center justify-between">
+          <BackButton fallbackPath="/admin/dashboard" />
+        </div>
+
         {/* Background glow graphics */}
         <div className="absolute top-0 left-10 w-80 h-80 bg-blue-500/10 blur-[130px] rounded-full pointer-events-none -z-10" />
 

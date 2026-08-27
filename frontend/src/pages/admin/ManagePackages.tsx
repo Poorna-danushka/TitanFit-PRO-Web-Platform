@@ -5,6 +5,7 @@ import Pagination from '../../components/Pagination';
 import { Trash2, Plus, Edit2, Package as PackageIcon, CheckCircle2, Search } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
+import BackButton from '../../components/BackButton';
 
 export default function ManagePackages() {
   const [packages, setPackages] = useState<any[]>([]);
@@ -83,6 +84,10 @@ export default function ManagePackages() {
 
   return (
     <div className="pb-16 space-y-8 relative text-white min-h-[85vh]">
+      <div className="flex items-center justify-between">
+        <BackButton fallbackPath="/admin/dashboard" />
+      </div>
+
       {/* Background glow graphics */}
       <div className="absolute top-0 left-10 w-80 h-80 bg-emerald-500/10 blur-[130px] rounded-full pointer-events-none -z-10" />
       <div className="absolute top-48 right-10 w-96 h-96 bg-purple-500/10 blur-[130px] rounded-full pointer-events-none -z-10" />

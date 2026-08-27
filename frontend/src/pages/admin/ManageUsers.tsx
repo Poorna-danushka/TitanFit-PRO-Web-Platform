@@ -9,6 +9,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
+import BackButton from '../../components/BackButton';
 
 export default function ManageUsers() {
   const [users, setUsers] = useState<any[]>([]);
@@ -195,6 +196,10 @@ export default function ManageUsers() {
 
   return (
     <div className="pb-16 space-y-8 relative text-white min-h-[85vh]">
+      <div className="flex items-center justify-between">
+        <BackButton fallbackPath="/admin/dashboard" />
+      </div>
+
       {/* Ambient Backdrop Effects */}
       <div className="absolute top-10 left-10 w-80 h-80 bg-blue-500/10 blur-[130px] rounded-full pointer-events-none -z-10" />
       <div className="absolute top-40 right-10 w-96 h-96 bg-purple-500/10 blur-[130px] rounded-full pointer-events-none -z-10" />

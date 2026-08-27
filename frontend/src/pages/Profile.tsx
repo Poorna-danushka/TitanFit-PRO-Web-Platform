@@ -7,6 +7,7 @@ import {
   Camera, Trash2, Activity, Lock, Sparkles, HeartPulse, CheckCircle2, AlertCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import BackButton from '../components/BackButton';
 
 export default function Profile() {
   const { user: ctxUser, updateUser } = useAuth();
@@ -206,6 +207,10 @@ export default function Profile() {
 
   return (
     <div className="pb-16 max-w-5xl mx-auto text-white space-y-8">
+      <div className="flex items-center justify-between">
+        <BackButton fallbackPath="/dashboard" />
+      </div>
+
       {/* ─── Hidden file input ─── */}
       <input
         type="file"

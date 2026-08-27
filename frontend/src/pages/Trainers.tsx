@@ -15,6 +15,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { useUIStore } from '../stores/uiStore';
+import BackButton from '../components/BackButton';
 
 interface Trainer {
   _id: string;
@@ -413,6 +414,10 @@ export default function Trainers() {
 
   return (
     <div className="space-y-8 pb-16 max-w-7xl mx-auto px-2 sm:px-4">
+      <div className="flex items-center justify-between">
+        <BackButton fallbackPath="/dashboard" />
+      </div>
+
       {/* ─── HEADER BANNER ─────────────────────────────────────────────── */}
       <motion.div
         initial={{ opacity: 0, y: -16 }}

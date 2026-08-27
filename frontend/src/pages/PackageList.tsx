@@ -6,6 +6,7 @@ import { Check, X, ShieldCheck, Zap, Sparkles, Award, Clock } from 'lucide-react
 import { Elements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
 import PaymentModal from '../components/PaymentModal';
+import BackButton from '../components/BackButton';
 
 // Initialize Stripe outside component to avoid recreating the Stripe object on every render
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_placeholder');
@@ -94,7 +95,11 @@ export default function PackageList() {
 
   return (
     <Elements stripe={stripePromise}>
-      <div className="pb-24 pt-8 text-white relative min-h-[80vh] flex flex-col justify-center">
+      <div className="pb-24 pt-4 text-white relative min-h-[80vh] flex flex-col justify-center">
+        <div className="max-w-6xl mx-auto w-full px-4 mb-4">
+          <BackButton fallbackPath="/dashboard" />
+        </div>
+
         {/* Background Ambient Glows */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-96 bg-green-500/10 blur-[120px] rounded-full pointer-events-none -z-10" />
         <div className="absolute bottom-0 right-0 w-96 h-96 bg-emerald-600/10 blur-[100px] rounded-full pointer-events-none -z-10" />

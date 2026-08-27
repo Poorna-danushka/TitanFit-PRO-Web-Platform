@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { QrCode, Scan, CheckCircle2, History, ShieldCheck, Clock, AlertCircle, Building2, ArrowRight } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { Link } from 'react-router-dom';
+import BackButton from '../components/BackButton';
 
 export default function AttendanceQR() {
   const { user } = useAuth();
@@ -78,6 +79,10 @@ export default function AttendanceQR() {
 
   return (
     <div className="space-y-8 pb-16 relative text-white min-h-[85vh]">
+      <div className="flex items-center justify-between">
+        <BackButton fallbackPath="/dashboard" />
+      </div>
+
       {/* Background Glows */}
       <div className="absolute top-0 left-10 w-80 h-80 bg-emerald-500/10 blur-[130px] rounded-full pointer-events-none -z-10" />
 

@@ -7,6 +7,7 @@ import {
 import { useAdminAnnouncements, AnnouncementType, Announcement } from '../../hooks/useNotifications';
 import { useAuth } from '../../context/AuthContext';
 import Pagination from '../../components/Pagination';
+import BackButton from '../../components/BackButton';
 
 const TYPE_CONFIG: Record<AnnouncementType, {
   label: string; icon: React.ReactNode;
@@ -97,6 +98,10 @@ export default function ManageNotifications() {
 
   return (
     <div className="space-y-8 pb-16 max-w-4xl mx-auto text-white min-h-[85vh] relative">
+      <div className="flex items-center justify-between">
+        <BackButton fallbackPath="/admin/dashboard" />
+      </div>
+
       {/* Background Glows */}
       <div className="absolute top-0 left-10 w-72 h-72 bg-purple-500/10 blur-[130px] rounded-full pointer-events-none -z-10" />
 

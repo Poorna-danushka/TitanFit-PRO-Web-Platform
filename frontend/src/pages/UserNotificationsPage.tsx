@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { Bell, CheckCheck, Check, Info, CheckCircle, AlertTriangle, Zap, Pin } from 'lucide-react';
 import { useAnnouncements, AnnouncementType, Announcement } from '../hooks/useNotifications';
 import { useState } from 'react';
+import BackButton from '../components/BackButton';
 
 const TYPE_CONFIG: Record<AnnouncementType, {
   label: string; icon: React.ReactNode;
@@ -53,6 +54,11 @@ export default function UserNotificationsPage() {
 
   return (
     <div className="space-y-8 pb-16 max-w-4xl mx-auto text-white min-h-[85vh] relative">
+      {/* Back navigation */}
+      <div className="flex items-center justify-between">
+        <BackButton fallbackPath="/dashboard" />
+      </div>
+
       {/* Ambient Glow */}
       <div className="absolute top-0 left-10 w-80 h-80 bg-emerald-500/10 blur-[130px] rounded-full pointer-events-none -z-10" />
 

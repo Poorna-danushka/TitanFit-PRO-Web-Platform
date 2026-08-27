@@ -4,6 +4,7 @@ import Pagination from '../../components/Pagination';
 import { ShoppingCart, Package, TrendingUp, CheckCircle, Building2, Check, X, Clock, AlertCircle, Search, Mail } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
+import BackButton from '../../components/BackButton';
 
 function getCustomerDisplayName(user: any): string {
   if (!user) return 'Member';
@@ -98,6 +99,10 @@ export default function ManagePurchases() {
 
   return (
     <div className="pb-16 space-y-8 relative text-white min-h-[85vh]">
+      <div className="flex items-center justify-between">
+        <BackButton fallbackPath="/admin/dashboard" />
+      </div>
+
       {/* Background glow graphics */}
       <div className="absolute top-10 left-1/4 w-80 h-80 bg-orange-500/10 blur-[130px] rounded-full pointer-events-none -z-10" />
       <div className="absolute top-40 right-10 w-96 h-96 bg-emerald-500/10 blur-[130px] rounded-full pointer-events-none -z-10" />
