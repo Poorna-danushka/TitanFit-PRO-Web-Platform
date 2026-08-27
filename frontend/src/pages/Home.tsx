@@ -6,6 +6,7 @@ import { Activity, Dumbbell, CalendarCheck, ShieldCheck, ArrowRight, Zap, Check,
 import { packageAPI, trainerAPI } from '../api/apiService';
 import { Award, Star } from 'lucide-react';
 import ChatBot from '../components/ChatBot';
+import { StatsBand, Marquee, SpotlightCard, MagneticButton, EnergyParticles, RevealWords, ScrollToTop } from '../components/home/HomeEffects';
 
 const Home = () => {
   const [packages, setPackages] = useState<any[]>([]);
@@ -100,6 +101,8 @@ const Home = () => {
           
           <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay" />
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#0B0F14]/80 to-[#0B0F14] z-10" />
+          {/* Rising energy particles */}
+          <EnergyParticles count={28} />
         </div>
         
         <div className="max-w-7xl mx-auto px-6 relative z-20 w-full text-center">
@@ -119,8 +122,9 @@ const Home = () => {
             transition={{ duration: 0.8, delay: 0.2 }}
             className="text-5xl md:text-7xl font-extrabold leading-[1.2] mb-8 tracking-tight"
           >
-            Sculpt Your Legacy <br className="hidden md:block" />
-            With <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-400 via-sky-400 to-sky-600">TitanFit Pro</span>
+            <RevealWords text="Sculpt Your Legacy With" delay={0.2} />
+            <br className="hidden md:block" />
+            <span className="text-shimmer">TitanFit Pro</span>
           </motion.h1>
 
           <motion.p 
@@ -138,17 +142,25 @@ const Home = () => {
             transition={{ duration: 0.8, delay: 0.4 }}
             className="flex flex-col sm:flex-row gap-5 justify-center items-center"
           >
-            <Link to="/register" className="w-full sm:w-auto px-10 py-5 bg-gradient-to-r from-sky-400 to-sky-500 text-black font-extrabold rounded-full text-lg transition-all flex items-center justify-center gap-2 group shadow-[0_0_40px_rgba(52,211,153,0.4)] hover:shadow-[0_0_60px_rgba(52,211,153,0.6)] hover:scale-105">
-              Start Free Trial <ArrowRight className="w-6 h-6 group-hover:translate-x-1.5 transition-transform" />
-            </Link>
-            <a href="#packages" className="w-full sm:w-auto px-10 py-5 bg-white/5 backdrop-blur-md border border-white/10 font-bold rounded-full text-lg hover:bg-white/10 transition-all flex items-center justify-center group">
-              Explore Plans
-            </a>
+            <MagneticButton className="w-full sm:w-auto">
+              <Link to="/register" className="w-full sm:w-auto px-10 py-5 bg-gradient-to-r from-sky-400 to-sky-500 text-black font-extrabold rounded-full text-lg transition-all flex items-center justify-center gap-2 group shadow-[0_0_40px_rgba(52,211,153,0.4)] hover:shadow-[0_0_60px_rgba(52,211,153,0.6)] hover:scale-105">
+                Start Free Trial <ArrowRight className="w-6 h-6 group-hover:translate-x-1.5 transition-transform" />
+              </Link>
+            </MagneticButton>
+            <MagneticButton className="w-full sm:w-auto">
+              <a href="#packages" className="w-full sm:w-auto px-10 py-5 bg-white/5 backdrop-blur-md border border-white/10 font-bold rounded-full text-lg hover:bg-white/10 transition-all flex items-center justify-center group">
+                Explore Plans
+              </a>
+            </MagneticButton>
           </motion.div>
         </div>
       </section>
 
+      {/* Animated Stats Band */}
+      <StatsBand />
 
+      {/* Marquee Banner */}
+      <Marquee items={['Hypertrophy Training', 'Personal Coaching', 'Body Transformation', 'AI Routine Optimization', 'Nutrition Guidance', '1-on-1 Sessions']} />
 
       {/* Features Section */}
       <section id="features" className="py-32 relative">
@@ -175,14 +187,14 @@ const Home = () => {
                 key={idx}
                 variants={staggerItem}
                 whileHover={{ y: -10 }}
-                className="p-8 rounded-3xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.04] hover:border-white/10 transition-all group backdrop-blur-xl relative overflow-hidden"
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                <div className="bg-black/50 border border-white/10 w-16 h-16 rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform shadow-inner relative z-10">
-                  {feat.icon}
-                </div>
-                <h3 className="text-2xl font-bold mb-4 relative z-10">{feat.title}</h3>
-                <p className="text-gray-400 leading-relaxed relative z-10">{feat.desc}</p>
+                <SpotlightCard className="p-8 rounded-3xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.04] hover:border-white/10 transition-all group backdrop-blur-xl">
+                  <div className="bg-black/50 border border-white/10 w-16 h-16 rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform shadow-inner relative z-10">
+                    {feat.icon}
+                  </div>
+                  <h3 className="text-2xl font-bold mb-4 relative z-10">{feat.title}</h3>
+                  <p className="text-gray-400 leading-relaxed relative z-10">{feat.desc}</p>
+                </SpotlightCard>
               </motion.div>
             ))}
           </motion.div>
@@ -576,6 +588,9 @@ const Home = () => {
 
       {/* FitBot — public chatbot, personal queries prompt login */}
       <ChatBot isPublic />
+
+      {/* Floating scroll-to-top button */}
+      <ScrollToTop />
 
     </div>
   );
