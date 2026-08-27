@@ -103,7 +103,7 @@ export default function UserSidebar({ onClose }: Props) {
       {/* Logo */}
       <div className="h-16 flex items-center justify-between px-5 border-b border-white/[0.06]">
         <Link to={userRole === 'TRAINER' ? '/trainer/dashboard' : userRole === 'STAFF' ? '/staff/dashboard' : '/dashboard'} className="flex items-center gap-2.5 group">
-          <LogoIcon size="sm" variant={userRole === 'TRAINER' ? 'purple' : 'green'} />
+          <LogoIcon size="sm" variant="titanium" />
           <span className="text-xl brand-logo-title tracking-tight text-white flex items-center gap-1.5 font-extrabold">
             <span>TITAN<span className={userRole === 'TRAINER' ? 'text-purple-400' : 'text-green-400'}>FIT</span></span>
             <span className="brand-accent-badge">PRO</span>

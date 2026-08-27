@@ -104,12 +104,12 @@ export default function Register() {
     }
   };
 
-  const strengthColors = ['bg-white/10', 'bg-red-500', 'bg-orange-500', 'bg-yellow-500', 'bg-blue-500', 'bg-green-500'];
-  const strengthTextColors = ['text-gray-600', 'text-red-400', 'text-orange-400', 'text-yellow-400', 'text-blue-400', 'text-green-400'];
+  const strengthColors = ['bg-white/10', 'bg-red-500', 'bg-[#C7CED6]', 'bg-yellow-500', 'bg-blue-500', 'bg-sky-500'];
+  const strengthTextColors = ['text-gray-600', 'text-red-400', 'text-[#C7CED6]', 'text-yellow-400', 'text-blue-400', 'text-sky-400'];
   const strengthLabels = ['', 'Very Weak', 'Weak', 'Fair — add uppercase/digit', 'Good', 'Strong'];
 
   return (
-    <div className="min-h-screen bg-black flex overflow-hidden">
+    <div className="min-h-screen bg-[#0B0F14] flex overflow-hidden">
       {/* Left panel */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
         <img
@@ -121,7 +121,7 @@ export default function Register() {
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
         <div className="relative z-10 flex flex-col justify-end p-12">
           <div className="mb-6">
-            <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-green-500/15 border border-green-500/30 rounded-full text-green-400 text-xs font-bold uppercase tracking-wider">
+            <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-sky-500/15 border border-sky-500/30 rounded-full text-sky-400 text-xs font-bold uppercase tracking-wider">
               Gym Members Only
             </span>
           </div>
@@ -134,7 +134,7 @@ export default function Register() {
               'AI-powered fitness coaching',
             ].map((item, i) => (
               <div key={i} className="flex items-center gap-3">
-                <CheckCircle2 className="w-5 h-5 text-green-400 shrink-0" />
+                <CheckCircle2 className="w-5 h-5 text-sky-400 shrink-0" />
                 <span className="text-gray-300 text-sm">{item}</span>
               </div>
             ))}
@@ -156,9 +156,9 @@ export default function Register() {
           className="relative z-10 w-full max-w-md py-8"
         >
           <Link to="/" className="flex items-center gap-2.5 mb-8 justify-center lg:justify-start group">
-            <LogoIcon size="lg" variant="green" />
+            <LogoIcon size="lg" variant="titanium" />
             <span className="text-2xl brand-logo-title tracking-tight text-white flex items-center gap-2 font-extrabold">
-              <span>TITAN<span className="text-green-400">FIT</span></span>
+              <span>TITAN<span className="text-sky-400">FIT</span></span>
               <span className="brand-accent-badge text-xs">PRO</span>
             </span>
           </Link>
@@ -329,7 +329,7 @@ export default function Register() {
               type="submit"
               id="reg-submit"
               disabled={loading || lockoutMs > 0}
-              className="w-full flex items-center justify-center gap-2.5 bg-green-500 text-black py-3.5 rounded-xl font-bold hover:bg-green-400 disabled:opacity-60 disabled:cursor-not-allowed transition-all glow-green mt-2 text-sm"
+              className="w-full flex items-center justify-center gap-2.5 bg-sky-500 text-black py-3.5 rounded-xl font-bold hover:bg-sky-400 disabled:opacity-60 disabled:cursor-not-allowed transition-all glow-green mt-2 text-sm"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
               {lockoutMs > 0
@@ -349,7 +349,7 @@ export default function Register() {
 
           <p className="text-center mt-5 text-gray-600 text-sm">
             Already have an account?{' '}
-            <Link to="/login" className="text-green-400 font-semibold hover:text-green-300 transition-colors">
+            <Link to="/login" className="text-sky-400 font-semibold hover:text-sky-300 transition-colors">
               Sign in
             </Link>
           </p>

@@ -96,7 +96,7 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
 
         {/* Brand Logo (Visible on mobile mostly, or if sidebar is collapsed) */}
         <div className="md:hidden flex items-center gap-2">
-          <LogoIcon size="sm" variant="green" />
+          <LogoIcon size="sm" variant="titanium" />
           <span className="text-xl brand-logo-title tracking-tight text-white flex items-center gap-1.5 font-extrabold">
             <span>TITAN<span className="text-green-400">FIT</span></span>
             <span className="brand-accent-badge">PRO</span>

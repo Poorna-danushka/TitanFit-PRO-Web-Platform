@@ -2,25 +2,19 @@ import React from 'react';
 
 interface LogoIconProps {
   size?: 'sm' | 'md' | 'lg';
-  variant?: 'green' | 'amber' | 'purple';
+  variant?: 'green' | 'amber' | 'purple' | 'titanium';
   className?: string;
 }
 
 export const LogoIcon: React.FC<LogoIconProps> = ({
   size = 'md',
-  variant = 'green',
+  variant = 'titanium',
   className = '',
 }) => {
   const dimensions = {
     sm: 'w-7 h-7',
     md: 'w-9 h-9',
     lg: 'w-11 h-11',
-  }[size];
-
-  const iconSizes = {
-    sm: 16,
-    md: 20,
-    lg: 24,
   }[size];
 
   const variantStyles = {
@@ -42,48 +36,21 @@ export const LogoIcon: React.FC<LogoIconProps> = ({
       border: 'border-purple-400/30',
       iconColor: '#ffffff',
     },
+    titanium: {
+      bg: 'from-[#F2F5F7] via-[#C7CED6] to-[#4B5563]',
+      glow: 'shadow-[0_0_24px_rgba(0,168,255,0.35)]',
+      border: 'border-[#00A8FF]/40',
+      iconColor: '#0B0F14',
+    },
   }[variant];
 
   return (
     <div
-      className={`relative flex items-center justify-center rounded-xl bg-gradient-to-br ${variantStyles.bg} ${variantStyles.glow} border ${variantStyles.border} ${dimensions} transition-all duration-300 ${className}`}
+      role="img"
+      aria-label="TitanFit logo"
+      className={`relative overflow-hidden rounded-xl border ${variantStyles.border} ${variantStyles.glow} ${dimensions} transition-all duration-300 ${className}`}
     >
-      <svg
-        width={iconSizes}
-        height={iconSizes}
-        viewBox="0 0 24 24"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        className="transform -rotate-6 hover:rotate-0 transition-transform duration-300"
-      >
-        {/* Heavy Dumbbell / Barbell Gym Emblem */}
-        <path
-          d="M6.5 4V20M17.5 4V20"
-          stroke={variantStyles.iconColor}
-          strokeWidth="2.5"
-          strokeLinecap="round"
-        />
-        <path
-          d="M4 6.5V17.5M20 6.5V17.5"
-          stroke={variantStyles.iconColor}
-          strokeWidth="3"
-          strokeLinecap="round"
-        />
-        <path
-          d="M2 9V15M22 9V15"
-          stroke={variantStyles.iconColor}
-          strokeWidth="2.5"
-          strokeLinecap="round"
-        />
-        <path
-          d="M6.5 12H17.5"
-          stroke={variantStyles.iconColor}
-          strokeWidth="3.5"
-          strokeLinecap="round"
-        />
-        {/* Center Weight Collar */}
-        <circle cx="12" cy="12" r="1.75" fill={variantStyles.iconColor} />
-      </svg>
+      <img src="/logo.png" alt="TitanFit PRO" className="w-full h-full object-cover" />
     </div>
   );
 };

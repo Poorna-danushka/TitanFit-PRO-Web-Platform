@@ -133,7 +133,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-black flex overflow-hidden">
+    <div className="min-h-screen bg-[#0B0F14] flex overflow-hidden">
       {/* Left panel */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
         <img
@@ -145,7 +145,7 @@ export default function Login() {
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
         <div className="relative z-10 flex flex-col justify-end p-12">
           <div className="flex items-center gap-2 mb-6 px-3 py-2 bg-white/10 backdrop-blur-md rounded-lg w-fit border border-white/10">
-            <ShieldCheck className="w-4 h-4 text-green-400" />
+            <ShieldCheck className="w-4 h-4 text-sky-400" />
             <span className="text-white text-xs font-semibold">Bank-level security & encryption</span>
           </div>
           <blockquote className="text-white">
@@ -171,9 +171,9 @@ export default function Login() {
           className="relative z-10 w-full max-w-md"
         >
           <Link to="/" className="flex items-center gap-2.5 mb-10 justify-center lg:justify-start group">
-            <LogoIcon size="lg" variant="green" />
+            <LogoIcon size="lg" variant="titanium" />
             <span className="text-2xl brand-logo-title tracking-tight text-white flex items-center gap-2 font-extrabold">
-              <span>TITAN<span className="text-green-400">FIT</span></span>
+              <span>TITAN<span className="text-sky-400">FIT</span></span>
               <span className="brand-accent-badge text-xs">PRO</span>
             </span>
           </Link>
@@ -249,7 +249,7 @@ export default function Login() {
                 <button
                   type="button"
                   onClick={handleOpenForgotModal}
-                  className="text-xs text-green-400 hover:text-green-300 transition-colors font-medium"
+                  className="text-xs text-sky-400 hover:text-sky-300 transition-colors font-medium"
                 >
                   Forgot password?
                 </button>
@@ -285,7 +285,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading || lockoutMs > 0}
-              className="w-full flex items-center justify-center gap-2.5 bg-green-500 text-black py-3.5 rounded-xl font-bold hover:bg-green-400 disabled:opacity-60 disabled:cursor-not-allowed transition-all glow-green mt-2 text-sm"
+              className="w-full flex items-center justify-center gap-2.5 bg-sky-500 text-black py-3.5 rounded-xl font-bold hover:bg-sky-400 disabled:opacity-60 disabled:cursor-not-allowed transition-all glow-green mt-2 text-sm"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
               {lockoutMs > 0
@@ -298,7 +298,7 @@ export default function Login() {
 
           <p className="text-center mt-8 text-gray-600 text-sm">
             Don't have an account?{' '}
-            <Link to="/register" className="text-green-400 font-semibold hover:text-green-300 transition-colors">
+            <Link to="/register" className="text-sky-400 font-semibold hover:text-sky-300 transition-colors">
               Create one free
             </Link>
           </p>
@@ -308,7 +308,7 @@ export default function Login() {
       {/* Forgot Password OTP Modal */}
       <AnimatePresence>
         {showForgotModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0B0F14]/80 backdrop-blur-md">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -325,7 +325,7 @@ export default function Login() {
               </button>
 
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-green-500/10 border border-green-500/20 text-green-400 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400 flex items-center justify-center">
                   <KeyRound className="w-5 h-5" />
                 </div>
                 <div>
@@ -336,8 +336,8 @@ export default function Login() {
 
               {forgotSuccess ? (
                 <div className="space-y-4 py-2">
-                  <div className="p-4 rounded-2xl bg-green-500/10 border border-green-500/20 text-green-300 text-xs flex items-start gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-green-400 shrink-0 mt-0.5" />
+                  <div className="p-4 rounded-2xl bg-sky-500/10 border border-sky-500/20 text-sky-300 text-xs flex items-start gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-sky-400 shrink-0 mt-0.5" />
                     <div>
                       <p className="font-bold text-white text-sm mb-1">Temporary OTP Sent!</p>
                       <p className="leading-relaxed">{forgotSuccess}</p>
@@ -349,7 +349,7 @@ export default function Login() {
                   <button
                     type="button"
                     onClick={() => setShowForgotModal(false)}
-                    className="w-full py-3 bg-green-500 text-black font-bold rounded-xl hover:bg-green-400 transition-colors text-sm"
+                    className="w-full py-3 bg-sky-500 text-black font-bold rounded-xl hover:bg-sky-400 transition-colors text-sm"
                   >
                     Got It — Return to Login
                   </button>
@@ -395,7 +395,7 @@ export default function Login() {
                     <button
                       type="submit"
                       disabled={forgotLoading}
-                      className="flex-1 py-3 bg-green-500 hover:bg-green-400 text-black text-sm font-bold rounded-xl transition-colors glow-green flex items-center justify-center gap-2 disabled:opacity-50"
+                      className="flex-1 py-3 bg-sky-500 hover:bg-sky-400 text-black text-sm font-bold rounded-xl transition-colors glow-green flex items-center justify-center gap-2 disabled:opacity-50"
                     >
                       {forgotLoading ? (
                         <>

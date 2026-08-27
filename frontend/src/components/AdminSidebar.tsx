@@ -42,7 +42,7 @@ export default function AdminSidebar({ onClose }: Props) {
       {/* Logo */}
       <div className="h-16 flex items-center justify-between px-5 border-b border-white/[0.06]">
         <Link to="/admin/dashboard" className="flex items-center gap-2.5 group">
-          <LogoIcon size="sm" variant={isSysAdmin ? 'amber' : 'purple'} />
+          <LogoIcon size="sm" variant="titanium" />
           <span className="text-xl brand-logo-title tracking-tight text-white flex items-center gap-1.5 font-extrabold">
             <span>TITAN<span className={isSysAdmin ? 'text-amber-400' : 'text-purple-400'}>FIT</span></span>
             <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-wider text-black ${isSysAdmin ? 'bg-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.4)]' : 'bg-purple-400 shadow-[0_0_12px_rgba(168,85,247,0.4)]'}`}>
