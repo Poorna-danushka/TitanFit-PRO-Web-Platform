@@ -78,7 +78,8 @@ app.get('/api/health', (req, res) => {
 });
 
 // ============ API Routes ============
-const prefixes = Array.from(new Set([process.env.API_PREFIX || '/api/v1', '/api/v1', '/api']));
+const defaultApiPrefix = process.env.API_PREFIX || '/api/v1';
+const prefixes = Array.from(new Set([defaultApiPrefix, '/api/v1', '/api']));
 
 prefixes.forEach((prefix) => {
   app.use(`${prefix}/auth`, authLimiter, authRoutes);
@@ -144,13 +145,13 @@ const startServer = async () => {
       } catch (err) {
         logger.warn('Plan expiration scheduler not started: ' + err.message);
       }
-      logger.info(`  - Auth: POST ${apiPrefix}/auth/register, /auth/login, GET /auth/me`);
-      logger.info(`  - Payments: POST ${apiPrefix}/payments/intent, /payments/subscribe`);
-      logger.info(`  - Packages: GET/POST ${apiPrefix}/packages`);
-      logger.info(`  - Memberships: GET ${apiPrefix}/memberships/plans`);
-      logger.info(`  - Trainers: GET ${apiPrefix}/trainers`);
-      logger.info(`  - AI Assistant: POST ${apiPrefix}/ai/chat`);
-      logger.info(`  - Admin: GET ${apiPrefix}/admin/dashboard`);
+      logger.info(`  - Auth: POST ${defaultApiPrefix}/auth/register, /auth/login, GET /auth/me`);
+      logger.info(`  - Payments: POST ${defaultApiPrefix}/payments/intent, /payments/subscribe`);
+      logger.info(`  - Packages: GET/POST ${defaultApiPrefix}/packages`);
+      logger.info(`  - Memberships: GET ${defaultApiPrefix}/memberships/plans`);
+      logger.info(`  - Trainers: GET ${defaultApiPrefix}/trainers`);
+      logger.info(`  - AI Assistant: POST ${defaultApiPrefix}/ai/chat`);
+      logger.info(`  - Admin: GET ${defaultApiPrefix}/admin/dashboard`);
       logger.info(`  - Health: GET /api/health`);
     });
   } catch (error) {
