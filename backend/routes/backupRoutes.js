@@ -7,6 +7,7 @@ import {
   listDatabaseBackups,
   restoreDatabaseBackup,
   deleteOldBackups,
+  deleteSingleBackup,
 } from '../services/backupService.js';
 
 const router = express.Router();
@@ -124,6 +125,32 @@ router.delete('/backups/cleanup', asyncHandler(async (req, res) => {
     success: true,
     message: `Cleanup complete. Deleted ${(result.deleted || []).length} backup(s).`,
     data: { deleted: result.deleted, errors: result.errors },
+  });
+}));
+
+// ── POST /admin/backups/delete-single ──────────────────────────────────────────
+// Delete a single backup by key from S3
+router.post('/backups/delete-single', asyncHandler(async (req, res) => {
+  const { backupKey } = req.body || {};
+
+  if (!backupKey) {
+    return res.status(400).json({ success: false, message: 'backupKey is required.' });
+  }
+
+  const result = await deleteSingleBackup(backupKey);
+
+  if (!result.success) {
+    const isMisconfigured = result.message?.includes('not configured');
+    return res.status(isMisconfigured ? 503 : 400).json({
+      success: false,
+      message: result.message || 'Failed to delete backup.',
+    });
+  }
+
+  res.status(200).json({
+    success: true,
+    message: 'Backup deleted successfully from S3.',
+    data: result,
   });
 }));
 

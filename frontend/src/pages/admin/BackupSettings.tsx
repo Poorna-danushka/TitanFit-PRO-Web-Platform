@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { adminAPI } from '../../api/apiService';
+import Pagination from '../../components/Pagination';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -70,9 +71,13 @@ export default function BackupSettings() {
   const [saving, setSaving]             = useState(false);
   const [backingUp, setBackingUp]       = useState(false);
   const [restoringKey, setRestoringKey] = useState<string | null>(null);
+  const [deletingKey, setDeletingKey]   = useState<string | null>(null);
   const [cleaning, setCleaning]         = useState(false);
   const [toasts, setToasts]             = useState<Toast[]>([]);
   const [toastCounter, setToastCounter] = useState(0);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const [settings, setSettings] = useState<any>({
     scheduleType: 'daily',
@@ -118,8 +123,9 @@ export default function BackupSettings() {
       }
 
       if (bRes.status === 'fulfilled') {
-        const raw = bRes.value.data;
-        setBackups(raw?.data ?? raw ?? []);
+        const raw = bRes.value.data?.data ?? bRes.value.data ?? [];
+        const sorted = [...raw].sort((a: BackupItem, b: BackupItem) => new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime());
+        setBackups(sorted);
       } else {
         const msg = (bRes.reason as any)?.safeMessage || 'Could not load backup list from S3.';
         addToast('warning', msg);
@@ -220,6 +226,24 @@ export default function BackupSettings() {
       }
     } finally {
       setRestoringKey(null);
+    }
+  };
+
+  const deleteBackup = async (key: string) => {
+    const fileName = key.split('/').pop() || key;
+    if (!confirm(`Are you sure you want to delete backup "${fileName}" from S3?\n\nThis operation cannot be undone. Continue?`)) return;
+    try {
+      setDeletingKey(key);
+      await adminAPI.deleteSingleBackup(key);
+      addToast('success', `Backup "${fileName}" deleted successfully from S3.`);
+      const bRes = await adminAPI.listBackups();
+      const raw = bRes.data?.data ?? bRes.data ?? [];
+      const sorted = [...raw].sort((a: BackupItem, b: BackupItem) => new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime());
+      setBackups(sorted);
+    } catch (err: any) {
+      addToast('error', err.safeMessage || 'Failed to delete backup.');
+    } finally {
+      setDeletingKey(null);
     }
   };
 
@@ -485,44 +509,73 @@ export default function BackupSettings() {
               </div>
             ) : (
               <div className="divide-y divide-white/[0.04]">
-                {backups.map(b => {
-                  const name       = b.key.split('/').pop() || b.key;
-                  const sizeMB     = (b.size / 1024 / 1024).toFixed(2);
-                  const dateStr    = b.lastModified ? new Date(b.lastModified).toLocaleString() : '—';
-                  const isRestoring = restoringKey === b.key;
-                  const downloadUrl = `https://${s3Config.bucket || ''}.s3.${s3Config.region || 'us-east-1'}.amazonaws.com/${encodeURIComponent(b.key)}`;
+                {(() => {
+                  const totalPages = Math.ceil(backups.length / itemsPerPage);
+                  const startIndex = (currentPage - 1) * itemsPerPage;
+                  const paginatedBackups = backups.slice(startIndex, startIndex + itemsPerPage);
 
                   return (
-                    <div
-                      key={b.key}
-                      className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 hover:bg-white/[0.02] transition-colors"
-                    >
-                      <div className="min-w-0">
-                        <div className="font-medium text-sm truncate" title={b.key}>{name}</div>
-                        <div className="text-xs text-gray-400 mt-0.5">{dateStr} · {sizeMB} MB</div>
-                      </div>
+                    <>
+                      {paginatedBackups.map(b => {
+                        const name       = b.key.split('/').pop() || b.key;
+                        const sizeMB     = (b.size / 1024 / 1024).toFixed(2);
+                        const dateStr    = b.lastModified ? new Date(b.lastModified).toLocaleString() : '—';
+                        const isRestoring = restoringKey === b.key;
+                        const isDeleting = deletingKey === b.key;
+                        const downloadUrl = `https://${s3Config.bucket || ''}.s3.${s3Config.region || 'us-east-1'}.amazonaws.com/${encodeURIComponent(b.key)}`;
 
-                      <div className="flex items-center gap-2 shrink-0">
-                        <button
-                          disabled={!!restoringKey}
-                          onClick={() => restore(b.key)}
-                          className="px-3 py-1.5 rounded-lg bg-red-700 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-medium transition-colors"
-                        >
-                          {isRestoring ? 'Restoring…' : 'Restore'}
-                        </button>
+                        return (
+                          <div
+                            key={b.key}
+                            className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 hover:bg-white/[0.02] transition-colors"
+                          >
+                            <div className="min-w-0">
+                              <div className="font-medium text-sm truncate" title={b.key}>{name}</div>
+                              <div className="text-xs text-gray-400 mt-0.5">{dateStr} · {sizeMB} MB</div>
+                            </div>
 
-                        <a
-                          href={downloadUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="px-3 py-1.5 rounded-lg bg-white/[0.07] hover:bg-white/[0.12] text-white text-xs font-medium transition-colors"
-                        >
-                          Download
-                        </a>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <button
+                                disabled={!!restoringKey || !!deletingKey}
+                                onClick={() => restore(b.key)}
+                                className="px-3 py-1.5 rounded-lg bg-amber-700/80 hover:bg-amber-600 border border-amber-500/30 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-medium transition-colors"
+                              >
+                                {isRestoring ? 'Restoring…' : 'Restore'}
+                              </button>
+
+                              <a
+                                href={downloadUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="px-3 py-1.5 rounded-lg bg-white/[0.07] hover:bg-white/[0.12] border border-white/10 text-white text-xs font-medium transition-colors"
+                              >
+                                Download
+                              </a>
+
+                              <button
+                                disabled={!!restoringKey || !!deletingKey}
+                                onClick={() => deleteBackup(b.key)}
+                                className="px-3 py-1.5 rounded-lg bg-red-900/60 hover:bg-red-700/80 border border-red-500/30 disabled:opacity-50 disabled:cursor-not-allowed text-red-200 hover:text-white text-xs font-medium transition-colors"
+                              >
+                                {isDeleting ? 'Deleting…' : 'Delete'}
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                      <div className="p-4 border-t border-white/[0.06]">
+                        <Pagination
+                          currentPage={currentPage}
+                          totalPages={totalPages}
+                          totalItems={backups.length}
+                          itemsPerPage={itemsPerPage}
+                          onPageChange={setCurrentPage}
+                        />
                       </div>
-                    </div>
+                    </>
                   );
-                })}
+                })()}
               </div>
             )}
           </div>

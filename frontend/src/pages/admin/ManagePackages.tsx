@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { packageAPI } from '../../api/apiService';
 import PackageForm from '../../components/PackageForm';
+import Pagination from '../../components/Pagination';
 import { Trash2, Plus, Edit2, Package as PackageIcon, CheckCircle2, Search } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
@@ -12,6 +13,10 @@ export default function ManagePackages() {
   const [selectedPackageId, setSelectedPackageId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [levelFilter, setLevelFilter] = useState('ALL');
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6;
 
   useEffect(() => {
     fetchPackages();
@@ -71,6 +76,10 @@ export default function ManagePackages() {
 
     return matchesSearch && matchesLevel;
   });
+
+  const totalPages = Math.ceil(filteredPackages.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedPackages = filteredPackages.slice(startIndex, startIndex + itemsPerPage);
 
   return (
     <div className="pb-16 space-y-8 relative text-white min-h-[85vh]">
@@ -171,9 +180,10 @@ export default function ManagePackages() {
           </button>
         </motion.div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {filteredPackages.map((pkg, i) => {
-            const itemsList = pkg.benefits || pkg.features || (pkg.exercises?.map((e: any) => e.name) || []);
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {paginatedPackages.map((pkg, i) => {
+                const itemsList = pkg.benefits || pkg.features || (pkg.exercises?.map((e: any) => e.name) || []);
 
             return (
               <motion.div
@@ -260,6 +270,17 @@ export default function ManagePackages() {
               </motion.div>
             );
           })}
+          </div>
+
+          <div className="p-4 bg-[#0f0e13]/90 border border-white/10 rounded-2xl">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={filteredPackages.length}
+              itemsPerPage={itemsPerPage}
+              onPageChange={setCurrentPage}
+            />
+          </div>
         </div>
       )}
 

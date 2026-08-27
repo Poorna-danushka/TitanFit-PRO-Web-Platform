@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { adminAPI, userAPI } from '../../api/apiService';
+import Pagination from '../../components/Pagination';
 import {
   Shield, ShieldAlert, Trash2, Users, AlertTriangle, UserCheck,
   ShieldCheck, X, Crown, Award, UserPlus, Lock, Power, CheckCircle,
@@ -19,6 +20,10 @@ export default function ManageUsers() {
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('ALL');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'DEACTIVATED'>('ALL');
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   // New User Form State
   const [name, setName] = useState('');
@@ -184,6 +189,10 @@ export default function ManageUsers() {
     MEMBER: users.filter(u => (u.role || '').toUpperCase() === 'MEMBER').length,
   };
 
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedUsers = filteredUsers.slice(startIndex, startIndex + itemsPerPage);
+
   return (
     <div className="pb-16 space-y-8 relative text-white min-h-[85vh]">
       {/* Ambient Backdrop Effects */}
@@ -325,9 +334,9 @@ export default function ManageUsers() {
                 </thead>
                 <tbody className="divide-y divide-white/[0.04]">
                   <AnimatePresence>
-                    {filteredUsers.map((u, i) => {
+                    {paginatedUsers.map((u, i) => {
                       const uRole = (u.role || 'MEMBER').toUpperCase();
-                      const isSysAdmin = u.isSystemAdmin || uRole === 'SYSTEM_ADMIN';
+                        const isSysAdmin = u.isSystemAdmin || uRole === 'SYSTEM_ADMIN';
                       const isAdmin = uRole === 'ADMIN' || isSysAdmin;
                       const isMe = u._id === currentUser?.id || u._id === currentUser?._id;
                       const isActive = u.isActive !== false;
@@ -478,6 +487,16 @@ export default function ManageUsers() {
                   </AnimatePresence>
                 </tbody>
               </table>
+
+              <div className="p-4 border-t border-white/10">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  totalItems={filteredUsers.length}
+                  itemsPerPage={itemsPerPage}
+                  onPageChange={setCurrentPage}
+                />
+              </div>
             </div>
           )}
         </div>

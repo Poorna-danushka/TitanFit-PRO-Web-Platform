@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { adminAPI } from '../../api/apiService';
+import Pagination from '../../components/Pagination';
 import { ShoppingCart, Package, TrendingUp, CheckCircle, Building2, Check, X, Clock, AlertCircle, Search, Mail } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
@@ -19,6 +20,10 @@ export default function ManagePurchases() {
   const [searchQuery, setSearchQuery] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   useEffect(() => {
     fetchPurchases();
@@ -86,6 +91,10 @@ export default function ManagePurchases() {
     .reduce((acc, curr) => acc + (curr.price || curr.packageId?.price || 0), 0);
 
   const pendingCount = purchases.filter((p) => p.status === 'pending_approval' || p.status === 'pending').length;
+
+  const totalPages = Math.ceil(filteredPurchases.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedPurchases = filteredPurchases.slice(startIndex, startIndex + itemsPerPage);
 
   return (
     <div className="pb-16 space-y-8 relative text-white min-h-[85vh]">
@@ -218,7 +227,7 @@ export default function ManagePurchases() {
                 </thead>
                 <tbody className="divide-y divide-white/[0.04]">
                   <AnimatePresence>
-                    {filteredPurchases.map((p, i) => {
+                    {paginatedPurchases.map((p, i) => {
                       const isPending = p.status === 'pending_approval' || p.status === 'pending';
                       const isBank = p.paymentMethod === 'bank_transfer' || p.bankTransferReference;
 
@@ -332,6 +341,16 @@ export default function ManagePurchases() {
                   </AnimatePresence>
                 </tbody>
               </table>
+
+              <div className="p-4 border-t border-white/10">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  totalItems={filteredPurchases.length}
+                  itemsPerPage={itemsPerPage}
+                  onPageChange={setCurrentPage}
+                />
+              </div>
             </div>
           )}
         </div>

@@ -291,16 +291,47 @@ export const listDatabaseBackups = async () => {
       })
     );
 
-    return {
-      success: true,
-      backups: (response.Contents || []).map((item) => ({
+    const sortedBackups = (response.Contents || [])
+      .map((item) => ({
         key: item.Key,
         size: item.Size,
         lastModified: item.LastModified,
-      })),
+      }))
+      .sort((a, b) => new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime());
+
+    return {
+      success: true,
+      backups: sortedBackups,
     };
   } catch (err) {
     return { success: false, message: `Failed to list backups from S3: ${err.message}` };
+  }
+};
+
+/**
+ * Delete a single backup by key from S3
+ */
+export const deleteSingleBackup = async (backupKey) => {
+  if (!backupKey) {
+    return { success: false, message: 'backupKey is required to delete a backup.' };
+  }
+
+  const s3 = getS3Config();
+  if (!s3) {
+    return { success: false, message: 'AWS S3 is not configured on the backend. Deletion is disabled.' };
+  }
+  const { bucketName, client } = s3;
+
+  try {
+    await client.send(
+      new DeleteObjectsCommand({
+        Bucket: bucketName,
+        Delete: { Objects: [{ Key: backupKey }], Quiet: false },
+      })
+    );
+    return { success: true, message: 'Backup deleted successfully from S3.', backupKey };
+  } catch (err) {
+    return { success: false, message: `Failed to delete backup from S3: ${err.message}` };
   }
 };
 

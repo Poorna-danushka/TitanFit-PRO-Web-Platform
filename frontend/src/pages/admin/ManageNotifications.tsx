@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useAdminAnnouncements, AnnouncementType, Announcement } from '../../hooks/useNotifications';
 import { useAuth } from '../../context/AuthContext';
+import Pagination from '../../components/Pagination';
 
 const TYPE_CONFIG: Record<AnnouncementType, {
   label: string; icon: React.ReactNode;
@@ -61,6 +62,10 @@ export default function ManageNotifications() {
   const [showForm, setShowForm] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
   const [form, setForm] = useState({
     title: '',
     message: '',
@@ -285,86 +290,106 @@ export default function ManageNotifications() {
           </div>
         ) : (
           <div className="space-y-3">
-            {announcements.map((ann, i) => {
-              const cfg = TYPE_CONFIG[ann.type || 'info'];
+            {(() => {
+              const totalPages = Math.ceil(announcements.length / itemsPerPage);
+              const startIndex = (currentPage - 1) * itemsPerPage;
+              const paginatedAnnouncements = announcements.slice(startIndex, startIndex + itemsPerPage);
+
               return (
-                <motion.div
-                  key={ann.id}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.04 }}
-                  className="group rounded-3xl overflow-hidden border border-white/10 bg-[#0f0e13]/90 backdrop-blur-md hover:border-white/20 transition-all duration-300 shadow-xl"
-                  style={{ borderLeft: `4px solid ${cfg.borderColor}` }}
-                >
-                  <div className="p-5 flex items-start gap-4">
-                    <div
-                      className="shrink-0 mt-0.5 w-9 h-9 rounded-2xl flex items-center justify-center"
-                      style={{ background: cfg.bgColor, color: cfg.borderColor }}
-                    >
-                      {cfg.icon}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap mb-1">
-                        <span className="font-bold text-base text-white">{ann.title}</span>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${cfg.badgeClass}`}>{cfg.label}</span>
-                        {ann.pinned && (
-                          <span className="text-[9px] font-bold uppercase tracking-wider text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded border border-amber-500/20 flex items-center gap-1">
-                            <Pin className="w-2.5 h-2.5" /> Pinned
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs text-gray-400 leading-relaxed mb-2.5">{ann.message}</p>
-                      <div className="flex items-center gap-3 text-[11px] text-gray-500">
-                        <span>by <strong className="text-gray-300">{ann.createdBy || 'Admin'}</strong></span>
-                        <span>·</span>
-                        <span className="flex items-center gap-1"><Clock className="w-3 h-3 text-gray-600" /> {timeAgo(ann.createdAt)}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-1.5 shrink-0 opacity-80 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={() => togglePin(ann)}
-                        title={ann.pinned ? 'Unpin' : 'Pin to top'}
-                        className={`p-2 rounded-xl border transition-all ${
-                          ann.pinned ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' : 'bg-white/[0.04] text-gray-400 border-white/[0.08] hover:text-white'
-                        }`}
-                      >
-                        <Pin className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => setDeleteConfirmId(ann.id)}
-                        className="p-2 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-all"
-                        title="Delete Announcement"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-
-                  <AnimatePresence>
-                    {deleteConfirmId === ann.id && (
+                <>
+                  {paginatedAnnouncements.map((ann, i) => {
+                    const cfg = TYPE_CONFIG[ann.type || 'info'];
+                    return (
                       <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="border-t border-white/[0.08] px-5 py-3.5 flex items-center justify-between bg-red-500/[0.05]"
+                        key={ann.id}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.04 }}
+                        className="group rounded-3xl overflow-hidden border border-white/10 bg-[#0f0e13]/90 backdrop-blur-md hover:border-white/20 transition-all duration-300 shadow-xl"
+                        style={{ borderLeft: `4px solid ${cfg.borderColor}` }}
                       >
-                        <p className="text-xs text-red-400 font-medium">Delete this announcement? This action cannot be undone.</p>
-                        <div className="flex items-center gap-2">
-                          <button onClick={() => setDeleteConfirmId(null)} className="px-3 py-1 bg-white/5 text-gray-300 text-xs rounded-lg font-medium">Cancel</button>
-                          <button
-                            onClick={() => { deleteAnnouncement(ann.id); setDeleteConfirmId(null); }}
-                            className="px-3 py-1 bg-red-500 text-white font-bold text-xs rounded-lg shadow-md shadow-red-500/20"
+                        <div className="p-5 flex items-start gap-4">
+                          <div
+                            className="shrink-0 mt-0.5 w-9 h-9 rounded-2xl flex items-center justify-center"
+                            style={{ background: cfg.bgColor, color: cfg.borderColor }}
                           >
-                            Delete
-                          </button>
+                            {cfg.icon}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap mb-1">
+                              <span className="font-bold text-base text-white">{ann.title}</span>
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${cfg.badgeClass}`}>{cfg.label}</span>
+                              {ann.pinned && (
+                                <span className="text-[9px] font-bold uppercase tracking-wider text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded border border-amber-500/20 flex items-center gap-1">
+                                  <Pin className="w-2.5 h-2.5" /> Pinned
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-gray-400 leading-relaxed mb-2.5">{ann.message}</p>
+                            <div className="flex items-center gap-3 text-[11px] text-gray-500">
+                              <span>by <strong className="text-gray-300">{ann.createdBy || 'Admin'}</strong></span>
+                              <span>·</span>
+                              <span className="flex items-center gap-1"><Clock className="w-3 h-3 text-gray-600" /> {timeAgo(ann.createdAt)}</span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 shrink-0 opacity-80 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={() => togglePin(ann)}
+                              title={ann.pinned ? 'Unpin' : 'Pin to top'}
+                              className={`p-2 rounded-xl border transition-all ${
+                                ann.pinned ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' : 'bg-white/[0.04] text-gray-400 border-white/[0.08] hover:text-white'
+                              }`}
+                            >
+                              <Pin className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => setDeleteConfirmId(ann.id)}
+                              className="p-2 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-all"
+                              title="Delete Announcement"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
+
+                        <AnimatePresence>
+                          {deleteConfirmId === ann.id && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: 'auto' }}
+                              exit={{ opacity: 0, height: 0 }}
+                              className="border-t border-white/[0.08] px-5 py-3.5 flex items-center justify-between bg-red-500/[0.05]"
+                            >
+                              <p className="text-xs text-red-400 font-medium">Delete this announcement? This action cannot be undone.</p>
+                              <div className="flex items-center gap-2">
+                                <button onClick={() => setDeleteConfirmId(null)} className="px-3 py-1 bg-white/5 text-gray-300 text-xs rounded-lg font-medium">Cancel</button>
+                                <button
+                                  onClick={() => { deleteAnnouncement(ann.id); setDeleteConfirmId(null); }}
+                                  className="px-3 py-1 bg-red-500 text-white font-bold text-xs rounded-lg shadow-md shadow-red-500/20"
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </motion.div>
-                    )}
-                  </AnimatePresence>
-                </motion.div>
+                    );
+                  })}
+
+                  <div className="p-4 bg-[#0f0e13]/90 border border-white/10 rounded-2xl">
+                    <Pagination
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      totalItems={announcements.length}
+                      itemsPerPage={itemsPerPage}
+                      onPageChange={setCurrentPage}
+                    />
+                  </div>
+                </>
               );
-            })}
+            })()}
           </div>
         )}
       </div>

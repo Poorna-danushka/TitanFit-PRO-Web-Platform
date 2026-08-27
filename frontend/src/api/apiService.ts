@@ -201,6 +201,7 @@ export const adminAPI = {
   createBackup: (label?: string) => api.post('/admin/backups/create', { label }, { timeout: 600_000 }),
   restoreBackup: (backupKey: string) => api.post('/admin/backups/restore', { backupKey }, { timeout: 600_000 }),
   deleteOldBackups: (days?: number) => api.delete('/admin/backups/cleanup', { params: days ? { days } : undefined, timeout: 60_000 }),
+  deleteSingleBackup: (backupKey: string) => api.post('/admin/backups/delete-single', { backupKey }, { timeout: 60_000 }),
   getSchedulerInfo: () => api.get('/admin/backups/config'),
 };
 
