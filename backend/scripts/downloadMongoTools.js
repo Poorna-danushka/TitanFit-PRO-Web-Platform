@@ -33,8 +33,9 @@ if (process.platform === 'linux') {
       file.on('finish', () => {
         file.close(() => {
           try {
-            execSync(`tar -xzf "${tmpArchive}" -C "${binDir}" --strip-components=2 "*/bin/mongodump" "*/bin/mongorestore"`, { stdio: 'inherit' });
-            execSync(`chmod +x "${dumpPath}" "${restorePath}"`, { stdio: 'inherit' });
+            // Extract all binaries directly into binDir by stripping 2 leading paths (archive-name/bin/)
+            execSync(`tar -xzf "${tmpArchive}" -C "${binDir}" --strip-components=2`, { stdio: 'inherit' });
+            execSync(`chmod +x "${binDir}"/*`, { stdio: 'inherit' });
             if (fs.existsSync(tmpArchive)) {
               fs.unlinkSync(tmpArchive);
             }
