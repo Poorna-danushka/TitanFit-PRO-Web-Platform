@@ -39,12 +39,12 @@ export const csrfMiddleware = (req, res, next) => {
   const csrfCookie = req.cookies?.['XSRF-TOKEN'];
   const csrfHeader = req.headers['x-csrf-token'] || req.headers['x-xsrf-token'];
 
-  // Accept valid match, or if CSRF header is supplied with bearer token authorization
+  // Accept valid match, or if request is authenticated with Bearer token header
   if (csrfCookie && csrfHeader && csrfCookie === csrfHeader) {
     return next();
   }
 
-  if (csrfHeader && req.headers.authorization?.startsWith('Bearer ')) {
+  if (req.headers.authorization?.startsWith('Bearer ')) {
     return next();
   }
 

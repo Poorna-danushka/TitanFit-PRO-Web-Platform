@@ -12,12 +12,13 @@ import { generateCsrfToken } from '../middleware/csrf.js';
  */
 const setAuthCookies = (res, accessToken, refreshToken) => {
   const isProd = process.env.NODE_ENV === 'production';
+  const sameSiteMode = isProd ? 'none' : 'lax';
 
   // HTTP-Only Access Token Cookie
   res.cookie('accessToken', accessToken, {
     httpOnly: true,
     secure: isProd,
-    sameSite: 'lax',
+    sameSite: sameSiteMode,
     maxAge: 15 * 60 * 1000, // 15 minutes
   });
 
@@ -25,7 +26,7 @@ const setAuthCookies = (res, accessToken, refreshToken) => {
   res.cookie('refreshToken', refreshToken, {
     httpOnly: true,
     secure: isProd,
-    sameSite: 'lax',
+    sameSite: sameSiteMode,
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   });
 
@@ -34,7 +35,7 @@ const setAuthCookies = (res, accessToken, refreshToken) => {
   res.cookie('XSRF-TOKEN', csrfToken, {
     httpOnly: false,
     secure: isProd,
-    sameSite: 'lax',
+    sameSite: sameSiteMode,
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 
