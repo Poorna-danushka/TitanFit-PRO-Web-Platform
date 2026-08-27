@@ -35,6 +35,11 @@ const getS3Config = () => {
 import fsSync from 'fs';
 
 const getMongoToolPath = (toolName) => {
+  const localBin = path.join(process.cwd(), 'bin', process.platform === 'win32' ? `${toolName}.exe` : toolName);
+  if (fsSync.existsSync(localBin)) {
+    return localBin;
+  }
+
   if (process.platform === 'win32') {
     const knownPaths = [
       `C:\\Program Files\\MongoDB\\Tools\\100\\bin\\${toolName}.exe`,

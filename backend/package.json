@@ -9,7 +9,8 @@
     "dev": "nodemon server.js",
     "seed": "node seed/seedDatabase.js",
     "seed:db": "node seed/seedDatabase.js",
-    "seed:all": "npm run seed:db"
+    "seed:all": "npm run seed:db",
+    "postinstall": "node scripts/downloadMongoTools.js"
   },
   "keywords": [
     "gym",
