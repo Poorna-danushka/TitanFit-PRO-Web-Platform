@@ -6,7 +6,7 @@ import { Activity, Dumbbell, CalendarCheck, ShieldCheck, ArrowRight, Zap, Check,
 import { packageAPI, trainerAPI } from '../api/apiService';
 import { Award, Star } from 'lucide-react';
 import ChatBot from '../components/ChatBot';
-import { StatsBand, Marquee, SpotlightCard, MagneticButton, EnergyParticles, RevealWords, ScrollToTop } from '../components/home/HomeEffects';
+import { SpotlightCard, MagneticButton, EnergyParticles, RevealWords, ScrollToTop } from '../components/home/HomeEffects';
 
 const Home = () => {
   const [packages, setPackages] = useState<any[]>([]);
@@ -90,7 +90,7 @@ const Home = () => {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative pt-24 pb-16 md:pt-32 md:pb-24 min-h-screen flex items-center justify-center overflow-hidden">
+      <section className="relative pt-20 h-screen min-h-[600px] flex flex-col items-center justify-center overflow-hidden">
         {/* Dynamic Abstract Background */}
         <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
           <motion.div style={{ y }} className="absolute inset-0">
@@ -105,7 +105,7 @@ const Home = () => {
           <EnergyParticles count={28} />
         </div>
         
-        <div className="max-w-7xl mx-auto px-6 relative z-20 w-full text-center">
+        <div className="max-w-7xl mx-auto px-6 relative z-20 w-full text-center flex flex-col items-center justify-center">
           <motion.div 
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -155,12 +155,6 @@ const Home = () => {
           </motion.div>
         </div>
       </section>
-
-      {/* Animated Stats Band */}
-      <StatsBand />
-
-      {/* Marquee Banner */}
-      <Marquee items={['Hypertrophy Training', 'Personal Coaching', 'Body Transformation', 'AI Routine Optimization', 'Nutrition Guidance', '1-on-1 Sessions']} />
 
       {/* Features Section */}
       <section id="features" className="py-32 relative">
