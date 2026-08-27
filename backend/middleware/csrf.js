@@ -24,9 +24,11 @@ export const csrfMiddleware = (req, res, next) => {
   const exemptPaths = [
     '/auth/login',
     '/auth/register',
+    '/auth/forgot-password',
     '/auth/csrf-token',
     '/auth/verify-email',
     '/auth/resend-verification',
+    '/payments/webhook',
     '/webhook',
   ];
 
@@ -37,13 +39,20 @@ export const csrfMiddleware = (req, res, next) => {
   const csrfCookie = req.cookies?.['XSRF-TOKEN'];
   const csrfHeader = req.headers['x-csrf-token'] || req.headers['x-xsrf-token'];
 
-  if (!csrfCookie || !csrfHeader || csrfCookie !== csrfHeader) {
-    logger.warn(`CSRF validation failed for ${req.method} ${req.originalUrl} - IP: ${req.ip}`);
-    return res.status(403).json({
-      success: false,
-      message: 'CSRF validation failed. Invalid or missing X-CSRF-Token header.',
-    });
+  // Accept valid match, or if CSRF header is supplied with bearer token authorization
+  if (csrfCookie && csrfHeader && csrfCookie === csrfHeader) {
+    return next();
   }
+
+  if (csrfHeader && req.headers.authorization?.startsWith('Bearer ')) {
+    return next();
+  }
+
+  logger.warn(`CSRF validation failed for ${req.method} ${req.originalUrl} - IP: ${req.ip}`);
+  return res.status(403).json({
+    success: false,
+    message: 'CSRF validation failed. Invalid or missing X-CSRF-Token header.',
+  });
 
   next();
 };
