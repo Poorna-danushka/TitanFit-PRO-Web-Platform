@@ -99,7 +99,7 @@ const Home = () => {
             <div className="absolute bottom-[-10%] left-[50%] -translate-x-1/2 w-[800px] h-[400px] bg-blue-600/10 blur-[150px] rounded-full mix-blend-screen" />
           </motion.div>
           
-          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay" />
+          <div className="absolute inset-0 opacity-20 mix-blend-overlay bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.08)_0,transparent_1px)] [background-size:4px_4px]" />
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#0B0F14]/80 to-[#0B0F14] z-10" />
           {/* Rising energy particles */}
           <EnergyParticles count={28} />

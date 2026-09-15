@@ -17,6 +17,7 @@ import {
 import { Link } from 'react-router-dom';
 import { streamChat, type ChatMessage } from '../api/chatApi';
 import MessageRenderer from './MessageRenderer';
+import { getToken } from '../utils/security';
 
 /* ─── Personal-query detection ───────────────────────────────── */
 const PERSONAL_KEYWORDS = [
@@ -151,7 +152,7 @@ export default function ChatBot({ isPublic = false }: ChatBotProps) {
     const userMsg: ChatMessage = { role: 'user', content: trimmed, timestamp: new Date() };
 
     // ── Public-mode gate: personal queries redirect to login ──
-    if (isPublic && isPersonalQuery(trimmed)) {
+    if (!getToken() && isPersonalQuery(trimmed)) {
       const newMessages = [...messages, userMsg];
       setMessages(newMessages);
       setLoginPromptIdx(newMessages.length); // next index = login prompt slot

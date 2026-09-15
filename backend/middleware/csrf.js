@@ -28,6 +28,9 @@ export const csrfMiddleware = (req, res, next) => {
     '/auth/csrf-token',
     '/auth/verify-email',
     '/auth/resend-verification',
+    // Chat is intentionally available to anonymous users. It is read-only
+    // and protected by the global API rate limiter instead.
+    '/chat',
     '/payments/webhook',
     '/webhook',
   ];

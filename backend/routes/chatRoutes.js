@@ -5,6 +5,20 @@ import { aiService } from '../services/aiService.js';
 
 const router = express.Router();
 
+const PERSONAL_QUERY_PATTERNS = [
+  'my membership', 'my workout', 'my progress', 'my package', 'my plan',
+  'my attendance', 'my profile', 'my account', 'my history', 'my data',
+  'my calories', 'my streak', 'how many sessions', 'how many workouts',
+  'show my', 'what is my', "what's my", 'check my', 'view my',
+  'attendance record', 'my stats', 'my schedule', 'my trainer',
+  'my subscription', 'my payment', 'my invoice',
+];
+
+const isPersonalQuery = (message) => {
+  const normalized = message.toLowerCase();
+  return PERSONAL_QUERY_PATTERNS.some((pattern) => normalized.includes(pattern));
+};
+
 /**
  * POST /api/v1/chat
  * Database-Aware AI Chat endpoint supporting SSE streaming & production deployment
@@ -14,6 +28,12 @@ router.post('/', optionalAuth, async (req, res) => {
 
   if (!message || typeof message !== 'string' || message.trim().length === 0) {
     return res.status(400).json({ error: 'Message is required.' });
+  }
+
+  if (!req.userId && isPersonalQuery(message)) {
+    return res.status(401).json({
+      error: 'Please log in to ask questions about your personal fitness data.',
+    });
   }
 
   // Fetch authenticated user role if present
