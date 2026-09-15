@@ -6,8 +6,13 @@ export interface ChatMessage {
   timestamp: Date;
 }
 
-// Vite proxy rewrites /api → /api/v1, so this becomes /api/v1/chat on the backend
-const API_BASE = '/api/chat';
+// Use the same API origin as the Axios client. A relative `/api/chat` URL is
+// handled by Vercel's SPA fallback in production instead of the Render API.
+const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL?.replace(/\/+$/, '');
+const rawBaseUrl = import.meta.env.PROD && (!configuredBaseUrl || configuredBaseUrl.startsWith('/'))
+  ? 'https://titanfit-pro-web-platform.onrender.com/api/v1'
+  : configuredBaseUrl || '/api/v1';
+const API_BASE = `${rawBaseUrl.replace(/\/+$/, '')}/chat`;
 
 /**
  * Streams a chat response from the production backend AI service.

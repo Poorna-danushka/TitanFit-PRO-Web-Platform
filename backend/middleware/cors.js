@@ -9,6 +9,7 @@ const corsOptions = {
       'http://localhost:5173',
       'http://localhost:3000',
       'http://localhost:5000',
+      'https://titan-fit-pro-web-platform.vercel.app',
       process.env.FRONTEND_URL,
       process.env.CORS_ORIGIN,
     ].filter(Boolean);
